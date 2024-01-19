@@ -36,8 +36,6 @@ class SqliteInit:
         gender varchar(255) default null,
         phone varchar(255) default null,
         create_time datetime not null,
-        last_login_time datetime default null,
-        last_login_ip varchar(255) default null,
         admin bool default false not null,
         primary key (user_id),
         unique(email,user_name));
@@ -54,8 +52,6 @@ class SqliteInit:
         user_name varchar(255) not null,
         ip_address varchar default null,
         last_seen timestamp,
-        cookie varchar(255) not null,
-        expire_time datetime not null,
         primary key (id));
         """
         con.sql2list(player_table_sql)
