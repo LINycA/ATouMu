@@ -6,6 +6,13 @@ name = "pip_conf_index_global"
 [packages]
 mutagen = "*"
 flask = "*"
+pyjwt = "*"
+dbutils = "*"
+pyyaml = "*"
+pymysql = "*"
+loguru = "*"
+uvicorn = "*"
+gunicorn = "*"
 
 [dev-packages]
 

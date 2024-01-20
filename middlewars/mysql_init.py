@@ -5,7 +5,7 @@ class MysqlInit:
     def __init__(self):
         self.mysql_con = MysqlCon(mode="")
 
-    def _create_database(self):
+    def _createdatabase(self):
         """
         初始化数据库
         :return:
@@ -54,3 +54,139 @@ class MysqlInit:
         index player_user (user_name),
         index player_ip_address (ip_address));
         """
+        self.mysql_con.sql2commit(player_table_sql)
+
+        # 专辑信息表
+        self.mysql_con.sql2commit("drop table if exists album;")
+        album_table_sql = """
+        create table album(
+        id varchar(255) not null comment "专辑id",
+        name varchar(255) not null comment "专辑名称",
+        artist_id varchar(255) default null comment "艺术家id",
+        duration real default 0 not null comment"持续时间",
+        genre varchar(255) default null comment "专辑风格",
+        song_count integer default 0 not null comment "歌曲数量",
+        full_text text default null comment "专辑描述",
+        release_time date comment"发行时间",
+        primary key(id) using btree,
+        index album_id (id),
+        index album_name (name),
+        index album_artist_id (artist_id),
+        index album_genre (genre),
+        index album_release_time (release_time));
+        """
+        self.mysql_con.sql2commit(album_table_sql)
+
+        # 艺术家信息表
+        self.mysql_con.sql2commit("drop table if exists artist;")
+        artist_table_sql = """
+        create table artist(
+        id varchar(255) not null comment "艺术家id",
+        name varchar(255) not null comment "艺术家名称",
+        gender varchar(3) default "其他" comment "艺术家性别",
+        primary key(id) using btree,
+        index artist_name (name),
+        index artist_gender (gender));
+        """
+        self.mysql_con.sql2commit(artist_table_sql)
+
+        # 艺术家风格信息表
+        self.mysql_con.sql2commit("drop table if exists artist_genre;")
+        artist_genre_table_sql = """
+        create table artist_genre(
+        artist_id varchar(255) not null comment"艺术家id",
+        genre_id varchar(255) not null comment "风格id",
+        primary key(artist_id,genre_id));
+        """
+        self.mysql_con.sql2commit(artist_genre_table_sql)
+
+        # 风格信息表
+        self.mysql_con.sql2commit("drop table if exists genre;")
+        genre_table_sql = """
+        create table genre(
+        id varchar(255) not null comment "风格id",
+        name varchar(255) not null comment "风格名称",
+        primary key(id),
+        index genre_name(name));
+        """
+        self.mysql_con.sql2commit(genre_table_sql)
+
+        # 歌曲信息表
+        self.mysql_con.sql2commit("drop table if exists media;")
+        media_table_sql = """
+        create table media(
+        id varchar(255) not null comment"歌曲文件id,文件的sha256值",
+        title varchar(255) not null comment"歌曲名称",
+        artist_id varchar(255) default "" not null comment "艺术家id",
+        album_id varchar(255) default "" not null comment"专辑id",
+        genre_id varchar(255) default "" not null comment"歌曲风格",
+        media_path text not null comment"音乐文件路径",
+        lyric_path text default null comment"歌词文件路径",
+        image_path text default null comment"图片文件路径",
+        size integer default 0 not null comment"文件大小",
+        duration real default 0 not null comment"歌曲时长",
+        create_at datetime comment"数据创建时间",
+        update_at datetime comment"数据更新时间",
+        primary key(id),
+        index me_title (title),
+        index me_aid (artist_id),
+        index me_albid (album_id),
+        index me_genre (genre_id),
+        index me_mepath (media_path(255)),
+        index me_lypath (lyric_path(255)),
+        index me_imgpath (image_path(255)));
+        """
+        self.mysql_con.sql2commit(media_table_sql)
+
+        # 歌曲风格表
+        self.mysql_con.sql2commit("drop table if exists media_genre;")
+        media_genre_table_sql = """
+        create table media_genre(
+        media_id varchar(255) not null comment "歌曲id",
+        genre_id varchar(255) not null comment "风格id",
+        index meid (media_id),
+        index genid (genre_id));
+        """
+        self.mysql_con.sql2commit(media_genre_table_sql)
+
+        # 歌单基础信息表
+        self.mysql_con.sql2commit("drop table if exists playlists;")
+        playlist_table_sql = """
+        create table playlist(
+        id varchar(255) not null comment "歌单id",
+        name varchar(255) not null comment "歌单名称",
+        comment text default null comment "歌单描述",
+        owner_id varchar(255) not null comment "歌单拥有者，用户id",
+        public bool default false not null comment "歌单是否公开",
+        create_time datetime comment "歌单创建时间",
+        update_time datetime comment "歌单更新时间",
+        size integer default 0 comment "歌单歌曲总数据",
+        duration real default 0 comment "歌单总时长",
+        song_count integer default 0 comment "歌曲数量",
+        primary key(id),
+        index pl_name (name),
+        index pl_owid (owner_id),
+        index pl_public (public));
+        """
+        self.mysql_con.sql2commit(player_table_sql)
+
+        # 歌单内容
+        self.mysql_con.sql2commit("drop table if exists playlist_track;")
+        playlist_track_table_sql = """
+        create table playlist_track(
+        playlist_id varchar(255) not null comment"歌单id",
+        media_id varchar(255) not null comment"歌曲id",
+        primary key(playlist_id,media_id)) ;
+        """
+        self.mysql_con.sql2commit(playlist_track_table_sql)
+
+        # 固有字段表
+        self.mysql_con.sql2commit("drop table if exists property;")
+        property_table_sql = """
+        create table property(
+        name varchar(255) not null comment "固定配置名称",
+        value varchar(255) not null "固定配置值",
+        primary key(name),
+        index pro_va (value));
+        """
+        self.mysql_con.sql2commit(property_table_sql)

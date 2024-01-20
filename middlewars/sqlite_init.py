@@ -88,7 +88,8 @@ class SqliteInit:
         artist_genre_table_sql = """
         create table artist_genre(
         artist_id varchar(255) not null,
-        genre_id varchar(255) not null);
+        genre_id varchar(255) not null,
+        primary key(artist_id,genre_id));
         """
         con.sql2list(artist_genre_table_sql)
 
@@ -104,7 +105,7 @@ class SqliteInit:
 
         # 歌曲信息表
         con.sql2list("drop table if exists media;")
-        medis_table_sql = """
+        media_table_sql = """
         create table media(
         id varchar(255) not null,
         title varchar(255) not null,
@@ -120,14 +121,15 @@ class SqliteInit:
         update_at datetime,
         primary key(id));    
         """
-        con.sql2list(medis_table_sql)
+        con.sql2list(media_table_sql)
 
         # 歌曲风格表
         con.sql2list("drop table if exists media_genre;")
         media_genre_table_sql = """
         create table media_genre(
         media_id varchar(255) not null,
-        genre_id varchar(255) not null);
+        genre_id varchar(255) not null,
+        primary key(media_id,genre_id));
         """
         con.sql2list(media_genre_table_sql)
 
@@ -150,11 +152,12 @@ class SqliteInit:
         con.sql2list(playlist_table_sql)
 
         # 歌单内容,有哪些歌曲
-        con.sql2list("drop table if exists playlist_track")
+        con.sql2list("drop table if exists playlist_track;")
         playlist_track_table_sql = """
         create table playlist_track(
         playlist_id varchar(255) not null,
-        medis_id varchar(255) not null);
+        media_id varchar(255) not null,
+        primary key(playlist_id,media_id));
         """
         con.sql2list(playlist_track_table_sql)
 
@@ -162,8 +165,8 @@ class SqliteInit:
         con.sql2list("drop table if exists property;")
         property_table_sql = """
         create table property(
-        name varchar(255),
-        value varchar(255),
+        name varchar(255) not null,
+        value varchar(255) not null,
         primary key(name));
         """
         con.sql2list(property_table_sql)
