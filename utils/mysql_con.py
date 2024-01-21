@@ -5,12 +5,12 @@ from . import YamlConfig
 
 
 class MysqlCon:
-    def __init__(self,mode:str):
+    def __init__(self,mode:str=""):
         mysql_conf = YamlConfig().mysql_conf()
         if mode == "init":
             db = "mysql"
         else:
-            db = mysql_conf.get("db")
+            db = mysql_conf.get("database")
         self.pool = PooledDB(
             creator=pymysql,
             mincached=10,

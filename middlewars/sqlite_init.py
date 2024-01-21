@@ -1,4 +1,5 @@
 from utils import Sqlite_con
+from loguru import logger
 
 
 class SqliteInit:
@@ -12,9 +13,9 @@ class SqliteInit:
         table_name_list = self.sql_con.sql2list("select name from sqlite_master where type='table';")
         for table in table_name_list:
             table_name = table[0]
-            column_list = self.sql_con.sql2list(f"pragma table_info('{table_name}')")
+            column_list = self.sql_con.sql2list(f"pragma table_info('{table_name}');")
             column_tuple = tuple([i[1] for i in column_list])
-            sql_create_index = f"create index {table}_index on {table} {str(column_tuple)}"
+            sql_create_index = f"create index {table_name}_index on {table_name} {str(column_tuple)};"
             self.sql_con.sql2list(sql_create_index)
 
     def db_init(self):

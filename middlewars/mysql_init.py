@@ -2,21 +2,23 @@ from utils import MysqlCon
 
 
 class MysqlInit:
-    def __init__(self):
-        self.mysql_con = MysqlCon(mode="")
-
-    def _createdatabase(self):
+    def createdatabase(self,database:str):
         """
         初始化数据库
         :return:
         """
         mysql_con = MysqlCon(mode="init")
-        sql = "create database ATouMu;"
+        sql = f"create database {database};"
         mysql_con.sql2commit(sql)
 
-    def _init_tables(self):
+    def init_user(self):
+        mysql_con = MysqlCon()
+        mysql_con.sql2commit("")
+
+    def init_tables(self):
         # 用户信息表
-        self.mysql_con.sql2commit("drop table if exists users;")
+        mysql_con = MysqlCon()
+        mysql_con.sql2commit("drop table if exists users;")
         users_table_sql = """
             create table users(
             user_id varchar(255) not null comment"用户id,uuid",
@@ -35,10 +37,10 @@ class MysqlInit:
             index user_email (email),
             index index_uname (user_name));
         """
-        self.mysql_con.sql2commit(users_table_sql)
+        mysql_con.sql2commit(users_table_sql)
 
         # 用户会话表
-        self.mysql_con.sql2commit("drop table if exists player;")
+        mysql_con.sql2commit("drop table if exists player;")
         player_table_sql = """
         create table player(
         id varchar(255) not null comment"会话id",
@@ -54,10 +56,10 @@ class MysqlInit:
         index player_user (user_name),
         index player_ip_address (ip_address));
         """
-        self.mysql_con.sql2commit(player_table_sql)
+        mysql_con.sql2commit(player_table_sql)
 
         # 专辑信息表
-        self.mysql_con.sql2commit("drop table if exists album;")
+        mysql_con.sql2commit("drop table if exists album;")
         album_table_sql = """
         create table album(
         id varchar(255) not null comment "专辑id",
@@ -75,10 +77,10 @@ class MysqlInit:
         index album_genre (genre),
         index album_release_time (release_time));
         """
-        self.mysql_con.sql2commit(album_table_sql)
+        mysql_con.sql2commit(album_table_sql)
 
         # 艺术家信息表
-        self.mysql_con.sql2commit("drop table if exists artist;")
+        mysql_con.sql2commit("drop table if exists artist;")
         artist_table_sql = """
         create table artist(
         id varchar(255) not null comment "艺术家id",
@@ -88,20 +90,20 @@ class MysqlInit:
         index artist_name (name),
         index artist_gender (gender));
         """
-        self.mysql_con.sql2commit(artist_table_sql)
+        mysql_con.sql2commit(artist_table_sql)
 
         # 艺术家风格信息表
-        self.mysql_con.sql2commit("drop table if exists artist_genre;")
+        mysql_con.sql2commit("drop table if exists artist_genre;")
         artist_genre_table_sql = """
         create table artist_genre(
         artist_id varchar(255) not null comment"艺术家id",
         genre_id varchar(255) not null comment "风格id",
         primary key(artist_id,genre_id));
         """
-        self.mysql_con.sql2commit(artist_genre_table_sql)
+        mysql_con.sql2commit(artist_genre_table_sql)
 
         # 风格信息表
-        self.mysql_con.sql2commit("drop table if exists genre;")
+        mysql_con.sql2commit("drop table if exists genre;")
         genre_table_sql = """
         create table genre(
         id varchar(255) not null comment "风格id",
@@ -109,10 +111,10 @@ class MysqlInit:
         primary key(id),
         index genre_name(name));
         """
-        self.mysql_con.sql2commit(genre_table_sql)
+        mysql_con.sql2commit(genre_table_sql)
 
         # 歌曲信息表
-        self.mysql_con.sql2commit("drop table if exists media;")
+        mysql_con.sql2commit("drop table if exists media;")
         media_table_sql = """
         create table media(
         id varchar(255) not null comment"歌曲文件id,文件的sha256值",
@@ -136,10 +138,10 @@ class MysqlInit:
         index me_lypath (lyric_path(255)),
         index me_imgpath (image_path(255)));
         """
-        self.mysql_con.sql2commit(media_table_sql)
+        mysql_con.sql2commit(media_table_sql)
 
         # 歌曲风格表
-        self.mysql_con.sql2commit("drop table if exists media_genre;")
+        mysql_con.sql2commit("drop table if exists media_genre;")
         media_genre_table_sql = """
         create table media_genre(
         media_id varchar(255) not null comment "歌曲id",
@@ -147,10 +149,10 @@ class MysqlInit:
         index meid (media_id),
         index genid (genre_id));
         """
-        self.mysql_con.sql2commit(media_genre_table_sql)
+        mysql_con.sql2commit(media_genre_table_sql)
 
         # 歌单基础信息表
-        self.mysql_con.sql2commit("drop table if exists playlists;")
+        mysql_con.sql2commit("drop table if exists playlists;")
         playlist_table_sql = """
         create table playlist(
         id varchar(255) not null comment "歌单id",
@@ -168,25 +170,25 @@ class MysqlInit:
         index pl_owid (owner_id),
         index pl_public (public));
         """
-        self.mysql_con.sql2commit(player_table_sql)
+        mysql_con.sql2commit(playlist_table_sql)
 
         # 歌单内容
-        self.mysql_con.sql2commit("drop table if exists playlist_track;")
+        mysql_con.sql2commit("drop table if exists playlist_track;")
         playlist_track_table_sql = """
         create table playlist_track(
         playlist_id varchar(255) not null comment"歌单id",
         media_id varchar(255) not null comment"歌曲id",
         primary key(playlist_id,media_id)) ;
         """
-        self.mysql_con.sql2commit(playlist_track_table_sql)
+        mysql_con.sql2commit(playlist_track_table_sql)
 
         # 固有字段表
-        self.mysql_con.sql2commit("drop table if exists property;")
+        mysql_con.sql2commit("drop table if exists property;")
         property_table_sql = """
         create table property(
         name varchar(255) not null comment "固定配置名称",
-        value varchar(255) not null "固定配置值",
+        value varchar(255) not null comment "固定配置值",
         primary key(name),
         index pro_va (value));
         """
-        self.mysql_con.sql2commit(property_table_sql)
+        mysql_con.sql2commit(property_table_sql)

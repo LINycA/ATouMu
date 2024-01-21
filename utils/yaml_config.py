@@ -5,6 +5,11 @@ from os import path,getcwd
 class YamlConfig:
     def __init__(self):
         self.config_path = path.join(getcwd(),"config","config.yaml")
+        if not path.exists(self.config_path):
+            base_conf = {"sys_init":False}
+            base_conf_yaml = safe_dump(base_conf)
+            with open(self.config_path,"w",encoding="utf-8")as f:
+                f.write(base_conf_yaml)
         with open(self.config_path,"rb")as f:
             stream = f.read()
         self.load_yaml = safe_load(stream)

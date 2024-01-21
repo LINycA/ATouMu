@@ -6,7 +6,7 @@
 
 ## 工作原理
 
-基于python flask的web框架开发
+基于python Fastapi的web框架开发
 
 ## 功能特性
 

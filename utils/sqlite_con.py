@@ -7,15 +7,11 @@ class Sqlite_con:
     def __init__(self):
         sqlite_conf = YamlConfig().sqlite_conf()
         if sqlite_conf:
-            self.con = connect(path.join(sqlite_conf.get("path"),"ATouMu.db"))
+            self.con = connect(path.join(sqlite_conf.get("path")))
 
     def sql2list(self,sql:str):
-        try:
-            res = self.con.execute(sql)
-            return res.fetchall()
-        except Exception as e:
-            logger.error("配置文件未初始化"+str(e))
-            return False
+        res = self.con.execute(sql)
+        return res.fetchall()
 
 
 if __name__ == '__main__':
