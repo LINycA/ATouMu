@@ -4,9 +4,9 @@ from datetime import datetime
 from uuid import uuid4
 from utils import Password
 from middlewars import SqliteInit,MysqlInit
+from os import getcwd,path
 from utils import Sqlite_con,MysqlCon
 from traceback import format_exc
-from pprint import pprint
 
 class SysInit:
     def __init__(self):
@@ -31,7 +31,6 @@ class SysInit:
         :return:
         """
         try:
-            pprint(conf)
             using_db = conf.get("using_db")
             conf_dict = {
                 "sys_init":True,
@@ -42,7 +41,7 @@ class SysInit:
                 try:
                     # 初始化sqlite数据库
                     conf_dict.get("db").get(using_db).update({
-                        "path":conf.get("db").get("path")
+                        "path":path.join(getcwd(),"db","ATouMu.db")
                     })
                     self.yaml_conf.safe_dump_conf(conf_dict)
                     sqlite_inti = SqliteInit()
@@ -58,7 +57,6 @@ class SysInit:
                     sqlite_con = Sqlite_con()
                     user_sql = self._adminuserInit(user_conf)
                     res = sqlite_con.sql2list(user_sql)
-                    print(res)
                 except Exception as e:
                     logger.error(e)
                     return False
@@ -66,13 +64,12 @@ class SysInit:
             elif using_db == "mysql":
                 # 初始化mysql数据库
                 conf_dict.get("db").get(using_db).update({
-                    "host": conf.get("host"),
-                    "port": conf.get("port"),
-                    "user": conf.get("user"),
-                    "password": conf.get("password"),
-                    "database": conf.get("database")
+                    "host": conf.get("db").get(using_db).get("host"),
+                    "port": conf.get("db").get(using_db).get("port"),
+                    "user": conf.get("db").get(using_db).get("user"),
+                    "password": conf.get("db").get(using_db).get("password"),
+                    "database": conf.get("db").get(using_db).get("database")
                 })
-                pprint(conf_dict)
                 self.yaml_conf.safe_dump_conf(conf_dict)
                 try:
                     # 测试数据库连接
@@ -81,7 +78,7 @@ class SysInit:
                     mysql_init.init_tables()
                 except Exception as e:
                     # 数据库连接失败则回退
-                    logger.error(str(e))
+                    logger.error(str(format_exc()))
                     conf_dict["sys_init"] = False
                     self.yaml_conf.safe_dump_conf(conf_dict)
                     return False

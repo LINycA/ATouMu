@@ -13,6 +13,8 @@ pymysql = "*"
 loguru = "*"
 uvicorn = "*"
 gunicorn = "*"
+gevent = "*"
+waitress = "*"
 
 [dev-packages]
 
