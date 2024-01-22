@@ -11,6 +11,7 @@ class Sqlite_con:
 
     def sql2list(self,sql:str):
         res = self.con.execute(sql)
+        self.con.commit()
         return res.fetchall()
 
 

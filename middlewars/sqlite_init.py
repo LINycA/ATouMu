@@ -1,5 +1,4 @@
 from utils import Sqlite_con
-from loguru import logger
 
 
 class SqliteInit:

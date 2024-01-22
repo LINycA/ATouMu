@@ -22,10 +22,9 @@ def sys_init_api():
     check_sys_init_bool = check_sys_init()
     if check_sys_init_bool:
         check_bool,conf_dict,user_dict = sys_init_params_check(data)
-        print(check_bool,conf_dict)
         if check_bool:
             sysinit = SysInit()
-            init_bool = sysinit.sys_init(conf_dict)
+            init_bool = sysinit.sys_init(conf_dict,user_dict)
             if init_bool:
                 return SYSINIT_SUCCESS
             else:

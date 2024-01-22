@@ -13,7 +13,7 @@ class MysqlInit:
 
     def init_user(self):
         mysql_con = MysqlCon()
-        mysql_con.sql2commit("")
+        mysql_con.sql2commit("insert into users()")
 
     def init_tables(self):
         # 用户信息表
