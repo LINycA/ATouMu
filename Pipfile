@@ -15,6 +15,7 @@ uvicorn = "*"
 gunicorn = "*"
 gevent = "*"
 waitress = "*"
+pipdeptree = "*"
 
 [dev-packages]
 
