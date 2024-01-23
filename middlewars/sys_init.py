@@ -1,7 +1,7 @@
 from utils import YamlConfig
 from loguru import logger
 from datetime import datetime
-from uuid import uuid4
+from shortuuid import uuid
 from utils import Password
 from middlewars import SqliteInit,MysqlInit
 from os import getcwd,path
@@ -13,7 +13,7 @@ class SysInit:
         self.yaml_conf = YamlConfig()
 
     def _adminuserInit(self,userconf:dict):
-        id = uuid4()
+        id = uuid()
         create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         pa = Password()
         pass_ = pa.pass_hash(userconf.get("password"))
