@@ -56,7 +56,7 @@ class SysInit:
                     # sqlite初始化管理员信息
                     sqlite_con = Sqlite_con()
                     user_sql = self._adminuserInit(user_conf)
-                    res = sqlite_con.sql2list(user_sql)
+                    res = sqlite_con.sql2commit(user_sql)
                 except Exception as e:
                     logger.error(e)
                     return False

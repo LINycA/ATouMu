@@ -1,6 +1,6 @@
 from const import *
 from pymysql import Connect
-from os import path,getcwd,mkdir
+from os import path, getcwd, mkdir
 from users import User
 from loguru import logger
 from middlewars import SysInit
@@ -9,7 +9,7 @@ from flask import Response
 
 class RequestParamsCheck:
     # 数据库初始化操作
-    def sys_init_params(self,data: dict) -> Response:
+    def sys_init_params(self, data: dict) -> Response:
         """
         检测系统初始化参数是否正确
         :param data:字典，json
@@ -21,7 +21,7 @@ class RequestParamsCheck:
             try:
                 sysinit = SysInit()
                 user_dict = data.get("user")
-                using_db_list = ["sqlite","mysql"]
+                using_db_list = ["sqlite", "mysql"]
                 # 判断指定使用的的数据库是否允许
                 if data.get("using_db") not in using_db_list:
                     return PARAMS_ERROR
@@ -36,8 +36,8 @@ class RequestParamsCheck:
                 logger.error(e)
                 return PARAMS_ERROR
             if data.get("using_db") == "sqlite":
-                if not path.exists(path.join(getcwd(),"db")):
-                    mkdir(path.join(getcwd(),"db"))
+                if not path.exists(path.join(getcwd(), "db")):
+                    mkdir(path.join(getcwd(), "db"))
             elif data.get("using_db") == "mysql":
                 try:
                     db_fields = ["host", "port", "user", "password", "database"]
@@ -50,9 +50,11 @@ class RequestParamsCheck:
                     logger.error(e)
                     return PARAMS_ERROR
                 try:
-                    con = Connect(host=data.get("db").get("mysql").get("host"), port=int(data.get("db").get("mysql").get("port")),
-                                user=data.get("db").get("mysql").get("user"), password=data.get("db").get("mysql").get("password"),
-                                database="mysql")
+                    con = Connect(host=data.get("db").get("mysql").get("host"),
+                                  port=int(data.get("db").get("mysql").get("port")),
+                                  user=data.get("db").get("mysql").get("user"),
+                                  password=data.get("db").get("mysql").get("password"),
+                                  database="mysql")
                     with con.cursor() as cur:
                         cur.execute("show tables")
                     con.close()
@@ -60,37 +62,58 @@ class RequestParamsCheck:
                     logger.error(ConnectionError("sys_init mysql Connect Error."))
                     return MYSQL_ERROR
             # 初始化数据库表
-            init_bool = sysinit.sys_init(data,user_dict)
+            init_bool = sysinit.sys_init(data, user_dict)
             if init_bool:
                 return SYSINIT_SUCCESS
             else:
                 return SYSINIT_FAILED
-    
+
     # 用户操作分发
-    def user_params(self,data: dict) -> Response:
+    def user_params(self, data: dict) -> Response:
         if "action" not in data or "user" not in data:
             return PARAMS_ERROR
         action = data.get("action")
-        action_keys = ["add","delete","query","modify"]
+        action_keys = ["add", "delete", "query", "modify", "detail"]
         if action not in action_keys:
-            return PARAMS_ERROR        
-        
+            return PARAMS_ERROR
+
         user = User()
+
         # 用户增加操作
         if action == "add":
             user_info_dict = data.get("user")
-            user_keys = ["user_name","nick_name","email","password","gender","phone","admin"]
+            user_keys = ["user_name", "nick_name", "email", "password", "gender", "phone", "admin"]
             for key in user_keys:
                 if key not in user_info_dict:
                     return PARAMS_ERROR
-            return user.user_add(username=user_info_dict.get("user_name"),nickname=user_info_dict.get("nick_name"),
-                          password=user_info_dict.get("password"),email=user_info_dict.get("email"),
-                          phone=user_info_dict.get("phone"),gender=user_info_dict.get("gender"),
-                          admin=user_info_dict.get("admin"))
+            return user.user_add(username=user_info_dict.get("user_name"), nickname=user_info_dict.get("nick_name"),
+                                 password=user_info_dict.get("password"), email=user_info_dict.get("email"),
+                                 phone=user_info_dict.get("phone"), gender=user_info_dict.get("gender"),
+                                 admin=user_info_dict.get("admin"))
+
         # 用户删除操作
         elif action == "delete":
             user_info_dict = data.get("user")
             if "user_id" not in user_info_dict:
                 return USERINFO_ERROR
             return user.user_del(user_info_dict.get("user_id"))
-    
+
+        # 用户信息修改操作
+        elif action == "modify":
+            user_info_dict = data.get("user")
+            user_keys = ["user_id", "nick_name", "email", "phone", "gender", "admin"]
+            for key in user_info_dict:
+                if key not in user_keys:
+                    return PARAMS_ERROR
+            return user.user_modify(userid=user_info_dict.get("user_id"), nickname=user_info_dict.get("nick_name"),
+                                    email=user_info_dict.get("email"), phone=user_info_dict.get("phone"),
+                                    gender=user_info_dict.get("gender"), admin=user_info_dict.get("admin"))
+        # 用户简单信息
+        elif action == "query":
+            res = user.user_query()
+            return res
+        # 用户详细信息
+        elif action == "detail":
+            user_info_dict = data.get("user")
+            res = user.user_detail(user_info_dict.get("user_id"))
+            return res

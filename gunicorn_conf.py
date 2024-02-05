@@ -11,10 +11,10 @@ threads = 4
 preload_app = False
 
 #端口 5000
-bind = '127.0.0.1:8200'
+bind = '127.0.0.1:8981'
 
 #设置守护进程,将进程交给supervisor管理
-daemon = 'true'
+# daemon = 'true'
 
 #工作模式协程,使用gevent模式（协程模式），默认的是sync模式,共有sync、eventlet、gevent、tornado
 worker_class = 'gevent' 
@@ -26,7 +26,7 @@ worker_connections = 2000
 max_requests = 1000  
 
 #设置进程文件目录
-pidfile = '/var/run/gunicorn.pid'
+# pidfile = '/var/run/gunicorn.pid'
 
 #进程名
 proc_name = 'gunicorn_process'

@@ -30,6 +30,7 @@ class MysqlInit:
             phone varchar(255) default null comment"用户手机号",
             create_time datetime not null comment"用户创建时间",
             admin bool default false not null comment"是否管理员",
+            last_login datetime default null comment"账号最后一次登陆时间",
             primary key(user_id) using BTREE,
             unique(email),
             unique(user_name),

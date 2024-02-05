@@ -33,10 +33,11 @@ class SqliteInit:
         user_name varchar(255) not null,
         email varchar(255) not null,
         password varchar(255) not null,
-        gender varchar(255) default null,
+        gender varchar(255) default "其他",
         phone varchar(255) default null,
         create_time datetime not null,
         admin bool default false not null,
+        last_login datetime default null,
         primary key (user_id),
         unique(email,user_name));
         """
