@@ -20,7 +20,7 @@ def check_sys_init_wrap(func):
             res = func(*args,**kwargs)
             return res
         else:
-            return trans_res(SYSINIT_ERROR)
+            return SYSINIT_ERROR
     return check_wraps
 
 

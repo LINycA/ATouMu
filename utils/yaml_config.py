@@ -14,6 +14,9 @@ class YamlConfig:
             stream = f.read()
         self.load_yaml = safe_load(stream)
 
+    def check_sys_usingdb(self):
+        return self.load_yaml.get("using_db")
+
     def check_sys_init(self):
         return self.load_yaml.get("sys_init")
 

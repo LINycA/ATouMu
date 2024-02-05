@@ -1,7 +1,9 @@
 import json
 from flask import Flask,send_file,request
 from const import *
-from middlewars import check_sys_init,SysInit,sys_init_params_check,check_sys_init_wrap
+from middlewars import check_sys_init,SysInit,check_sys_init_wrap,RequestParamsCheck
+
+params_check = RequestParamsCheck()
 
 
 app = Flask(__name__)
@@ -21,7 +23,7 @@ def sys_init_api():
     data = json.loads(request.data)
     check_sys_init_bool = check_sys_init()
     if check_sys_init_bool:
-        check_bool,conf_dict,user_dict = sys_init_params_check(data)
+        check_bool,conf_dict,user_dict = params_check.sys_init_params(data)
         if check_bool:
             sysinit = SysInit()
             init_bool = sysinit.sys_init(conf_dict,user_dict)
@@ -33,6 +35,12 @@ def sys_init_api():
             return conf_dict
     else:
         return SYSINIT_INITED
+
+@app.post("/api/user")
+@check_sys_init_wrap
+def User():
+    data = json.loads(request.data)
+    data,response = params_check.user_add_params_check
 
 @app.get("/api/music")
 @check_sys_init_wrap

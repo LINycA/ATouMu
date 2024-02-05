@@ -1,7 +1,7 @@
 from dbutils.pooled_db import PooledDB
 import pymysql
 from pymysql.cursors import DictCursor
-from . import YamlConfig
+from utils import YamlConfig
 
 
 class MysqlCon:
@@ -23,28 +23,16 @@ class MysqlCon:
             database=db
         )
 
-    def sql2dict(self,sql:str) -> dict:
-        """
-        执行sql语句，并返回dict结果
-        :param sql:
-        :return:
-        """
-        con = self.pool.connection()
-        with con.cursor(cursor=DictCursor) as cur:
-            cur.execute(sql)
-            res = cur.fetchall()
-        con.close()
-        return res
-
     def sql2commit(self,sql:str) -> int:
         """
-        执行sql语句并提交结果，返回执行条目数
+        执行sql语句并提交结果
         :param sql:
         :return:
         """
         con = self.pool.connection()
         with con.cursor()as cur:
-            res = cur.execute(sql)
+            cur.execute(sql)
+            res = cur.fetchall()
             con.commit()
         con.close()
         return res
@@ -66,5 +54,5 @@ class MysqlCon:
 if __name__ == '__main__':
     con = MysqlCon(mode="init")
     sql = "show tables;"
-    res = con.sql2dict(sql)
+    res = con.sql2commit(sql)
     print(res)

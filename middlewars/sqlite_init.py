@@ -9,13 +9,13 @@ class SqliteInit:
         为所有的表所有字段创建索引
         :return:
         """
-        table_name_list = self.sql_con.sql2list("select name from sqlite_master where type='table';")
+        table_name_list = self.sql_con.sql2commit("select name from sqlite_master where type='table';")
         for table in table_name_list:
             table_name = table[0]
-            column_list = self.sql_con.sql2list(f"pragma table_info('{table_name}');")
+            column_list = self.sql_con.sql2commit(f"pragma table_info('{table_name}');")
             column_tuple = tuple([i[1] for i in column_list])
             sql_create_index = f"create index {table_name}_index on {table_name} {str(column_tuple)};"
-            self.sql_con.sql2list(sql_create_index)
+            self.sql_con.sql2commit(sql_create_index)
 
     def db_init(self):
         """
@@ -25,7 +25,7 @@ class SqliteInit:
         con = self.sql_con
 
         # 用户信息表
-        con.sql2list("drop table if exists users;")
+        con.sql2commit("drop table if exists users;")
         user_table_sql = """
         create table users(
         user_id varchar(255) not null,
@@ -40,10 +40,10 @@ class SqliteInit:
         primary key (user_id),
         unique(email,user_name));
         """
-        con.sql2list(user_table_sql)
+        con.sql2commit(user_table_sql)
 
         # 用户会话表，管理用户cookie，或token
-        con.sql2list("drop table if exists player;")
+        con.sql2commit("drop table if exists player;")
         player_table_sql = """
         create table player(
         id varchar(255) not null,
@@ -54,10 +54,10 @@ class SqliteInit:
         last_seen timestamp,
         primary key (id));
         """
-        con.sql2list(player_table_sql)
+        con.sql2commit(player_table_sql)
 
         # 专辑信息表
-        con.sql2list("drop table if exists album;")
+        con.sql2commit("drop table if exists album;")
         album_table_sql = """
         create table album(
         id varchar(255) not null,
@@ -70,10 +70,10 @@ class SqliteInit:
         release_time date,
         primary key(id));
         """
-        con.sql2list(album_table_sql)
+        con.sql2commit(album_table_sql)
 
         # 艺术家信息表
-        con.sql2list("drop table if exists artist;")
+        con.sql2commit("drop table if exists artist;")
         artist_table_sql = """
         create table artist(
         id varchar(255) not null,
@@ -81,30 +81,30 @@ class SqliteInit:
         gender varchar(3) default "0" not null,
         primary key(id));
         """
-        con.sql2list(artist_table_sql)
+        con.sql2commit(artist_table_sql)
 
         # 艺术家风格信息表
-        con.sql2list("drop table if exists artist_genre;")
+        con.sql2commit("drop table if exists artist_genre;")
         artist_genre_table_sql = """
         create table artist_genre(
         artist_id varchar(255) not null,
         genre_id varchar(255) not null,
         primary key(artist_id,genre_id));
         """
-        con.sql2list(artist_genre_table_sql)
+        con.sql2commit(artist_genre_table_sql)
 
         # 风格信息表
-        con.sql2list("drop table if exists genre;")
+        con.sql2commit("drop table if exists genre;")
         genre_table_sql = """
         create table genre(
         id varchar(255) not null,
         name varchar(255) not null,
         primary key(id));
         """
-        con.sql2list(genre_table_sql)
+        con.sql2commit(genre_table_sql)
 
         # 歌曲信息表
-        con.sql2list("drop table if exists media;")
+        con.sql2commit("drop table if exists media;")
         media_table_sql = """
         create table media(
         id varchar(255) not null,
@@ -121,20 +121,20 @@ class SqliteInit:
         update_at datetime,
         primary key(id));    
         """
-        con.sql2list(media_table_sql)
+        con.sql2commit(media_table_sql)
 
         # 歌曲风格表
-        con.sql2list("drop table if exists media_genre;")
+        con.sql2commit("drop table if exists media_genre;")
         media_genre_table_sql = """
         create table media_genre(
         media_id varchar(255) not null,
         genre_id varchar(255) not null,
         primary key(media_id,genre_id));
         """
-        con.sql2list(media_genre_table_sql)
+        con.sql2commit(media_genre_table_sql)
 
         # 歌单基础信息
-        con.sql2list("drop table if exists playlist;")
+        con.sql2commit("drop table if exists playlist;")
         playlist_table_sql = """
         create table playlist(
         id varchar(255) default null,
@@ -149,27 +149,27 @@ class SqliteInit:
         song_count integer default 0 not null,
         primary key(id));
         """
-        con.sql2list(playlist_table_sql)
+        con.sql2commit(playlist_table_sql)
 
         # 歌单内容,有哪些歌曲
-        con.sql2list("drop table if exists playlist_track;")
+        con.sql2commit("drop table if exists playlist_track;")
         playlist_track_table_sql = """
         create table playlist_track(
         playlist_id varchar(255) not null,
         media_id varchar(255) not null,
         primary key(playlist_id,media_id));
         """
-        con.sql2list(playlist_track_table_sql)
+        con.sql2commit(playlist_track_table_sql)
 
         # 固有字段
-        con.sql2list("drop table if exists property;")
+        con.sql2commit("drop table if exists property;")
         property_table_sql = """
         create table property(
         name varchar(255) not null,
         value varchar(255) not null,
         primary key(name));
         """
-        con.sql2list(property_table_sql)
+        con.sql2commit(property_table_sql)
 
         # 为所有的表，所有字段创建索引
         self._create_index()
