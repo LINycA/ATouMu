@@ -1,5 +1,4 @@
 from utils import YamlConfig
-from utils import trans_res
 import functools
 from const import *
 

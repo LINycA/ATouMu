@@ -34,10 +34,21 @@ def Login():
     res = dispatcher.login_params(data=data)
     return res
 
+@app.post("/api/register")
+@check_sys_init_wrap
+def register():
+    ...
+
 @app.post("/api/user")
 @check_sys_init_wrap
 def User():
-    token = request.headers["Authorization"]
+    """
+    用户管理
+    """
+    try:
+        token = request.headers["Authorization"]
+    except:
+        return TOKEN_ERROR
     data = json.loads(request.data)
     res = dispatcher.user_params(data,token)
     return res

@@ -1,19 +1,21 @@
 import jwt
 import datetime
 from utils import Sqlite_con,MysqlCon,YamlConfig
+from middlewars import check_sys_init
 from const import *
 
 class TokenCheck:
     def __init__(self) -> None:
-        using_db = YamlConfig().check_sys_usingdb()
-        if using_db == "sqlite":
-            self.sql_con = Sqlite_con()
-        elif using_db == "mysql":
-            self.sql_con = MysqlCon()
-        sql = "select value from property where name=\"secret_key\";"
-        sql_res = self.sql_con.sql2commit(sql=sql)
-        self.secret_key = sql_res[0][0]
-        self.algorithm = "HS256"
+        if not check_sys_init():
+            using_db = YamlConfig().check_sys_usingdb()
+            if using_db == "sqlite":
+                self.sql_con = Sqlite_con()
+            elif using_db == "mysql":
+                self.sql_con = MysqlCon()
+            sql = "select value from property where name=\"secret_key\";"
+            sql_res = self.sql_con.sql2commit(sql=sql)
+            self.secret_key = sql_res[0][0]
+            self.algorithm = "HS256"
     # 生成token
     def gen_token(self,payload:dict):
         expire = datetime.timedelta(hours=24)

@@ -1,16 +1,16 @@
 from const import *
 from pymysql import Connect
 from os import path, getcwd, mkdir
-from users import User,Login
+from users import User,Login,TokenCheck
 from loguru import logger
 from middlewars import SysInit
 from flask import Response
 
 
+
 class RequestParamsCheck:
     def __init__(self):
-        self.login = Login()
-
+        self.tk_check = TokenCheck()
     # 数据库初始化操作
     def sys_init_params(self, data: dict) -> Response:
         """
@@ -73,26 +73,32 @@ class RequestParamsCheck:
 
     # 登陆操作
     def login_params(self,data:dict) -> Response:
+        login_c = Login()
+        keys = ["user_name","password"]
+        for i in keys:
+            if i not in data:
+                return PARAMS_ERROR
         username = data.get("user_name")
         password = data.get("password")
-        res = self.login.login(username=username,password=password)
+        res = login_c.login(username=username,password=password)
         return res
 
     # 用户操作分发
     def user_params(self, data: dict,token:str) -> Response:
-        expire,admin = self.login.token_check.check_token(token=token)
+        # tk_check = TokenCheck()
+        expire,admin = self.tk_check.check_token(token=token)
         # 判断token是否过期
         if expire:
             return TOKEN_EXPIRE
         if "action" not in data or "user" not in data:
             return PARAMS_ERROR
         action = data.get("action")
-        action_keys = ["add", "delete", "query", "modify", "detail"]
+        action_keys = ["add", "delete", "query", "modify", "detail","check"]
         if action not in action_keys:
             return PARAMS_ERROR
 
         user = User()
-
+           
         # 用户增加操作
         if action == "add":
             if admin:
@@ -134,6 +140,8 @@ class RequestParamsCheck:
         elif action == "detail":
             if admin:
                 user_info_dict = data.get("user")
+                if "user_id" not in user_info_dict:
+                    return PARAMS_ERROR
                 res = user.user_detail(user_info_dict.get("user_id"))
                 return res
             return PERMISSION_ERROR

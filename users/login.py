@@ -1,4 +1,5 @@
 from flask import Response
+from const import *
 from utils import Sqlite_con,Password,MysqlCon,YamlConfig,trans_res
 from users import TokenCheck
 
@@ -14,7 +15,9 @@ class Login:
 
     def login(self,username:str,password:str) -> Response:
         sql = f"select user_id,nick_name,password,admin from users where user_name=\"{username}\";"
-        sql_res = self.sql_con.sql2commit(sql=sql)
+        sql_res = self.sql_con.sql2commit(sql)
+        if sql_res == []:
+            return LOGIN_ERROR
         tk_dict = {
             "user_id":sql_res[0][0],
             "nick_name":sql_res[0][1],
