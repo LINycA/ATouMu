@@ -1,13 +1,16 @@
 from const import *
 from pymysql import Connect
 from os import path, getcwd, mkdir
-from users import User
+from users import User,Login
 from loguru import logger
 from middlewars import SysInit
 from flask import Response
 
 
 class RequestParamsCheck:
+    def __init__(self):
+        self.login = Login()
+
     # 数据库初始化操作
     def sys_init_params(self, data: dict) -> Response:
         """
@@ -68,8 +71,19 @@ class RequestParamsCheck:
             else:
                 return SYSINIT_FAILED
 
+    # 登陆操作
+    def login_params(self,data:dict) -> Response:
+        username = data.get("user_name")
+        password = data.get("password")
+        res = self.login.login(username=username,password=password)
+        return res
+
     # 用户操作分发
-    def user_params(self, data: dict) -> Response:
+    def user_params(self, data: dict,token:str) -> Response:
+        expire,admin = self.login.token_check.check_token(token=token)
+        # 判断token是否过期
+        if expire:
+            return TOKEN_EXPIRE
         if "action" not in data or "user" not in data:
             return PARAMS_ERROR
         action = data.get("action")
@@ -81,22 +95,26 @@ class RequestParamsCheck:
 
         # 用户增加操作
         if action == "add":
-            user_info_dict = data.get("user")
-            user_keys = ["user_name", "nick_name", "email", "password", "gender", "phone", "admin"]
-            for key in user_keys:
-                if key not in user_info_dict:
-                    return PARAMS_ERROR
-            return user.user_add(username=user_info_dict.get("user_name"), nickname=user_info_dict.get("nick_name"),
-                                 password=user_info_dict.get("password"), email=user_info_dict.get("email"),
-                                 phone=user_info_dict.get("phone"), gender=user_info_dict.get("gender"),
-                                 admin=user_info_dict.get("admin"))
+            if admin:
+                user_info_dict = data.get("user")
+                user_keys = ["user_name", "nick_name", "email", "password", "gender", "phone", "admin"]
+                for key in user_keys:
+                    if key not in user_info_dict:
+                        return PARAMS_ERROR
+                return user.user_add(username=user_info_dict.get("user_name"), nickname=user_info_dict.get("nick_name"),
+                                    password=user_info_dict.get("password"), email=user_info_dict.get("email"),
+                                    phone=user_info_dict.get("phone"), gender=user_info_dict.get("gender"),
+                                    admin=user_info_dict.get("admin"))
+            return PERMISSION_ERROR
 
         # 用户删除操作
         elif action == "delete":
-            user_info_dict = data.get("user")
-            if "user_id" not in user_info_dict:
-                return USERINFO_ERROR
-            return user.user_del(user_info_dict.get("user_id"))
+            if admin:
+                user_info_dict = data.get("user")
+                if "user_id" not in user_info_dict:
+                    return USERINFO_ERROR
+                return user.user_del(user_info_dict.get("user_id"))
+            return PERMISSION_ERROR
 
         # 用户信息修改操作
         elif action == "modify":
@@ -114,6 +132,8 @@ class RequestParamsCheck:
             return res
         # 用户详细信息
         elif action == "detail":
-            user_info_dict = data.get("user")
-            res = user.user_detail(user_info_dict.get("user_id"))
-            return res
+            if admin:
+                user_info_dict = data.get("user")
+                res = user.user_detail(user_info_dict.get("user_id"))
+                return res
+            return PERMISSION_ERROR

@@ -11,10 +11,12 @@ class Sqlite_con:
             self.con = connect(path.join(sqlite_conf.get("path")))
 
     def sql2commit(self,sql:str):
-        res = self.con.execute(sql)
-        self.con.commit()
-        return res.fetchall()
-
+        try:
+            res = self.con.execute(sql)
+            self.con.commit()
+            return res.fetchall()
+        except:
+            logger.error(format_exc())
 
 if __name__ == '__main__':
     import datetime

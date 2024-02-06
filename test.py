@@ -1,7 +1,4 @@
-import re
+from shortuuid import uuid
 
 
-username = "-? 12!@#@%^&(*%*)\\|/.,.<>:;'asd_f123"
-
-res = re.findall(r"\W",username)
-print(res)
+print(uuid())

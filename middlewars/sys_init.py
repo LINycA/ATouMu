@@ -2,6 +2,7 @@ from utils import YamlConfig
 from loguru import logger
 from datetime import datetime
 from shortuuid import uuid
+from uuid import uuid4
 from utils import Password
 from middlewars import SqliteInit,MysqlInit
 from os import getcwd,path
@@ -12,7 +13,12 @@ class SysInit:
     def __init__(self):
         self.yaml_conf = YamlConfig()
 
-    def _adminuserInit(self,userconf:dict):
+    def _gen_jwt_secret_key(self) -> str:
+        secret_key = uuid4()
+        sql = f"insert into property(name,value) values(\"secret_key\",\"{secret_key}\");"
+        return sql
+
+    def _adminuserInit(self,userconf:dict) -> str:
         id = uuid()
         create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         pa = Password()
@@ -56,7 +62,9 @@ class SysInit:
                     # sqlite初始化管理员信息
                     sqlite_con = Sqlite_con()
                     user_sql = self._adminuserInit(user_conf)
+                    secret_key_sql = self._gen_jwt_secret_key()
                     res = sqlite_con.sql2commit(user_sql)
+                    sqlite_con.sql2commit(secret_key_sql)
                 except Exception as e:
                     logger.error(e)
                     return False
@@ -86,7 +94,9 @@ class SysInit:
                     # mysql初始化管理员信息
                     mysql_con = MysqlCon()
                     user_sql = self._adminuserInit(user_conf)
+                    secret_key_sql = self._gen_jwt_secret_key()
                     mysql_con.sql2commit(user_sql)
+                    mysql_con.sql2commit(secret_key_sql)
                 except Exception as e:
                     logger.error(e)
                 return True
