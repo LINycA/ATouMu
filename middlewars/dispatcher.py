@@ -1,7 +1,7 @@
 from const import *
 from pymysql import Connect
 from os import path, getcwd, mkdir
-from users import User,Login,TokenCheck
+from users import User,Login,TokenCheck,Register
 from loguru import logger
 from middlewars import SysInit
 from flask import Response
@@ -85,7 +85,6 @@ class RequestParamsCheck:
 
     # 用户操作分发
     def user_params(self, data: dict,token:str) -> Response:
-        # tk_check = TokenCheck()
         expire,admin = self.tk_check.check_token(token=token)
         # 判断token是否过期
         if expire:
@@ -145,3 +144,17 @@ class RequestParamsCheck:
                 res = user.user_detail(user_info_dict.get("user_id"))
                 return res
             return PERMISSION_ERROR
+
+    # 注册操作
+    def register_params(self,data: dict) -> Response:
+        keys = ["user_name","nick_name","password","email","phone","gender"]
+        for key in keys:
+            if key not in data:
+                return PARAMS_ERROR
+
+        register = Register()
+
+        res = register.register(username=data.get("user_name"),nick_name=data.get("nick_name"),
+                          password=data.get("password"),email=data.get("email"),
+                          phone=data.get("phone"),gender=data.get("gender"))
+        return res

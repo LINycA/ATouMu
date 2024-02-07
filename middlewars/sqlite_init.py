@@ -39,7 +39,8 @@ class SqliteInit:
         admin bool default false not null,
         last_login datetime default null,
         primary key (user_id),
-        unique(email,user_name));
+        unique(email),
+        unique(user_name));
         """
         con.sql2commit(user_table_sql)
 

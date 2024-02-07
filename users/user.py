@@ -48,7 +48,7 @@ class User:
     def check_user_exists(self,userid:str="",username:str="") -> bool:
         sql = f"select 1 from users where user_id=\"{userid}\" or user_name=\"{username}\";"
         sql_res = self.sql_con.sql2commit(sql=sql)
-        if sql_res != []:
+        if sql_res:
             return True
         return False
 

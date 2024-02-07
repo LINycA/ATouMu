@@ -37,7 +37,9 @@ def Login():
 @app.post("/api/register")
 @check_sys_init_wrap
 def register():
-    ...
+    data = json.loads(request.data)
+    res = dispatcher.register_params(data)
+    return res
 
 @app.post("/api/user")
 @check_sys_init_wrap
