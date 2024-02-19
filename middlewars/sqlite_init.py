@@ -58,6 +58,17 @@ class SqliteInit:
         """
         con.sql2commit(player_table_sql)
 
+        # 用户注册，邮箱验证码缓存表
+        con.sql2commit("drop table if exists verify_code_temp;")
+        verify_code_temp_table_sql = """
+        create table verify_code_temp(
+        email varchar(255) not null,
+        code varchar(7) not null,
+        expire int(20) not null,
+        primary key(email));
+        """
+        con.sql2commit(verify_code_temp_table_sql)
+
         # 专辑信息表
         con.sql2commit("drop table if exists album;")
         album_table_sql = """

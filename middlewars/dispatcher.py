@@ -1,16 +1,21 @@
-from const import *
-from pymysql import Connect
 from os import path, getcwd, mkdir
-from users import User,Login,TokenCheck,Register
-from loguru import logger
-from middlewars import SysInit
-from flask import Response
+import re
 
+from flask import Response
+from pymysql import Connect
+from loguru import logger
+
+from const import *
+from users import User,Login,TokenCheck,Register
+from middlewars import SysInit,Email
+from utils import YamlConfig
 
 
 class RequestParamsCheck:
     def __init__(self):
         self.tk_check = TokenCheck()
+        self.yaml_conf = YamlConfig()
+        self.email = Email()
     # 数据库初始化操作
     def sys_init_params(self, data: dict) -> Response:
         """
@@ -145,13 +150,38 @@ class RequestParamsCheck:
                 return res
             return PERMISSION_ERROR
 
+    # 验证码请求
+    def verifycode_params(self,data: dict) -> Response:
+        settings_conf = self.yaml_conf.settings_conf()
+        if not settings_conf.get("registe_allow"):
+            return REGIST_UNALLOW
+        action_keys = ["get_code"]
+        action = data.get("action")
+        if action not in action_keys:
+            return PARAMS_ERROR
+        verify_info = data.get("verify_info")
+        email = verify_info.get("email")
+        code = verify_info.get("code")
+        if not re.match(r"^[0-9a-zA-Z._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$",email):
+            return PARAMS_ERROR
+        if len(code) != 6 or re.match(r"\W",code):
+            return PARAMS_ERROR
+        if action == "get_code":
+            if res := self.email.send_email(email):
+                return res
+        return PARAMS_ERROR
+
     # 注册操作
     def register_params(self,data: dict) -> Response:
+        settings_conf = self.yaml_conf.settings_conf()
         keys = ["user_name","nick_name","password","email","phone","gender"]
+        if not settings_conf.get("registe_allow"):
+            return REGIST_UNALLOW
+        if registe_auth := settings_conf.get("registe_auth"):
+            keys.append("code")
         for key in keys:
             if key not in data:
                 return PARAMS_ERROR
-
         register = Register()
 
         res = register.register(username=data.get("user_name"),nick_name=data.get("nick_name"),

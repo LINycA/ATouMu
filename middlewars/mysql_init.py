@@ -40,6 +40,17 @@ class MysqlInit:
         """
         mysql_con.sql2commit(users_table_sql)
 
+        # 用户注册验证码缓存表
+        mysql_con.sql2commit("drop table if exists verify_code_temp;")
+        verify_code_temp_table = """
+        create table verify_code_temp(
+        email varchar(255) not null comment "用户邮箱",
+        code varchar(7) not nul comment "验证码",
+        expire int(20) not null comment "验证码过期时间戳",
+        primary key(email) using BTREE);
+        """
+        mysql_con.sql2commit(verify_code_temp_table)
+
         # 用户会话表
         mysql_con.sql2commit("drop table if exists player;")
         player_table_sql = """

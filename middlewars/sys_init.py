@@ -37,12 +37,13 @@ class SysInit:
         :return:
         """
         try:
+            conf_dict = self.yaml_conf.load_yaml
             using_db = conf.get("using_db")
-            conf_dict = {
+            conf_dict.update({
                 "sys_init":True,
                 "using_db":using_db,
                 "db":{using_db:{}}
-            }
+            })
             if using_db == "sqlite":
                 try:
                     # 初始化sqlite数据库

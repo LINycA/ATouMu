@@ -2,3 +2,4 @@
 *.db*
 config.yaml
 *.mp3
+*vscode*

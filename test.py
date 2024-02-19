@@ -1,4 +1,6 @@
-from shortuuid import uuid
+import re
 
+a = "a123sdf@asdf.gmail"
 
-print(uuid())
+if b := re.findall(r"\s",a):
+    print(b)
