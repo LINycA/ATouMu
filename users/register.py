@@ -9,6 +9,7 @@ from shortuuid import uuid
 from const import *
 from utils import Sqlite_con, MysqlCon, Password, YamlConfig
 from users import User
+from middlewars import VerifyCode
 
 
 class Register:
@@ -63,3 +64,17 @@ class Register:
         except:
             logger.error(format_exc())
             return USER_REGISTER_FAILED
+
+    # 密码重置
+    def reset_password(self,email:str,code:str,password:str) -> Response:
+        verify_code = VerifyCode()
+        if not verify_code.match_code(email=email,code_=code):
+            return VERIFY_CODE_FAILED
+        try:
+            password_hash = self.passwd.pass_hash(password=password)
+            change_password = f'update users set password="{password_hash}" where email="{email}";'
+            self.sql_con.sql2commit(change_password)
+            return USER_RESET_PASSWORD_SUCCESS
+        except:
+            logger.error(format_exc())
+            return USER_RESET_PASSWORD_FAILED

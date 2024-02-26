@@ -45,8 +45,8 @@ class User:
         return None
 
     # 检测用户是否存在
-    def check_user_exists(self,userid:str="",username:str="") -> bool:
-        sql = f"select 1 from users where user_id=\"{userid}\" or user_name=\"{username}\";"
+    def check_user_exists(self,userid:str="",username:str="",email:str="") -> bool:
+        sql = f"select 1 from users where user_id=\"{userid}\" or user_name=\"{username}\" or email=\"{email}\";"
         sql_res = self.sql_con.sql2commit(sql=sql)
         if sql_res:
             return True
@@ -74,7 +74,7 @@ class User:
             return USERQUERY_ERROR
 
     # 获取用户简略信息
-    def user_query(self):
+    def user_query(self) -> Response:
         sql = f"select user_id,nick_name,user_name,admin,create_time,last_login from users;"
         try:
             res = self.sql_con.sql2commit(sql)
@@ -93,6 +93,16 @@ class User:
         except Exception as e:
             logger.error(e)
             return USERQUERY_ERROR
+
+    # 获取用户昵称
+    def user_nickname(self,email:str) -> str:
+        sql = f'select nick_name from users where email="{email}";'
+        try:
+            res = self.sql_con.sql2commit(sql=sql)
+            return res[0][0]
+        except:
+            logger.error(format_exc())
+            return None 
 
     # user_add 增加用户
     def user_add(self, username: str, nickname: str, password: str, email: str, phone: str = None, gender: str = "其他",

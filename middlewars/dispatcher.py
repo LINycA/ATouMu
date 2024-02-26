@@ -161,13 +161,23 @@ class RequestParamsCheck:
             return PARAMS_ERROR
         verify_info = data.get("verify_info")
         email = verify_info.get("email")
-        code = verify_info.get("code")
+        nickname = verify_info.get("nick_name")
+        self.user = User()
         if not re.match(r"^[0-9a-zA-Z._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$",email):
-            return PARAMS_ERROR
-        if len(code) != 6 or re.match(r"\W",code):
-            return PARAMS_ERROR
-        if action == "get_code":
-            if res := self.email.send_email(email):
+            return PARAMS_ERROR        
+        # 用户注册获取验证码
+        if action == "regist_get_code":
+            if self.user.check_user_exists(email=email):
+                return USER_EXISTS
+            if res := self.email.send_email(send_to=email,nickname=nickname):
+                return res
+        # 用户找回密码获取验证码
+        elif action == "forget_password_get_code":
+            if not self.user.check_user_exists(email=email):
+                return USER_UNEXISTS
+            else:
+                nickname = self.user.user_nickname(email=email)
+            if res := self.email.send_email(send_to=email,nickname=nickname):
                 return res
         return PARAMS_ERROR
 
@@ -182,6 +192,12 @@ class RequestParamsCheck:
         for key in keys:
             if key not in data:
                 return PARAMS_ERROR
+        if registe_auth:
+            email = data.get("email")
+            code = data.get("code")
+            verify_res = self.email.verify_code.match_code(email=email,code_=code)
+            if not verify_res:
+                return VERIFY_CODE_FAILED
         register = Register()
 
         res = register.register(username=data.get("user_name"),nick_name=data.get("nick_name"),
