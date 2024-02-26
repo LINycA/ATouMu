@@ -1,13 +1,14 @@
-from utils import YamlConfig
-from loguru import logger
 from datetime import datetime
-from shortuuid import uuid
-from uuid import uuid4
-from utils import Password
-from middlewars import SqliteInit,MysqlInit
 from os import getcwd,path
-from utils import Sqlite_con,MysqlCon
 from traceback import format_exc
+
+from shortuuid import uuid
+from loguru import logger
+from uuid import uuid4
+
+from middlewars import SqliteInit,MysqlInit
+from utils import Sqlite_con,MysqlCon,YamlConfig,Password
+
 
 class SysInit:
     def __init__(self):
@@ -42,6 +43,7 @@ class SysInit:
             conf_dict.update({
                 "sys_init":True,
                 "using_db":using_db,
+                "media_path":getcwd(),
                 "db":{using_db:{}}
             })
             if using_db == "sqlite":

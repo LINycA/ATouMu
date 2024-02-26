@@ -44,7 +44,7 @@ class SqliteInit:
         """
         con.sql2commit(user_table_sql)
 
-        # 用户会话表，管理用户cookie，或token
+        # 用户会话表，用户客户端日志
         con.sql2commit("drop table if exists player;")
         player_table_sql = """
         create table player(
@@ -73,15 +73,15 @@ class SqliteInit:
         con.sql2commit("drop table if exists album;")
         album_table_sql = """
         create table album(
-        id varchar(255) not null,
         name varchar(255) not null,
-        artist_id varchar(255) default null,
+        artist_name varchar(255) not null,
         duration real default 0 not null,
         genre varchar(255) default null,
         song_count integer default 0 not null,
         full_text text default null,
         release_time date,
-        primary key(id));
+        primary key(name),
+        unique(artist_name));
         """
         con.sql2commit(album_table_sql)
 
@@ -89,10 +89,9 @@ class SqliteInit:
         con.sql2commit("drop table if exists artist;")
         artist_table_sql = """
         create table artist(
-        id varchar(255) not null,
         name varchar(255) not null,
         gender varchar(3) default "0" not null,
-        primary key(id));
+        primary key(name));
         """
         con.sql2commit(artist_table_sql)
 
@@ -122,8 +121,8 @@ class SqliteInit:
         create table media(
         id varchar(255) not null,
         title varchar(255) not null,
-        artist_id varchar(255) default "" not null,
-        album_id varchar(255) default "" not null,
+        artist_name varchar(255) default "" not null,
+        album_name varchar(255) default "" not null,
         genre_id varchar(255) default "" not null,
         media_path text not null,
         lyric_path text default "" not null,

@@ -74,7 +74,6 @@ class MysqlInit:
         mysql_con.sql2commit("drop table if exists album;")
         album_table_sql = """
         create table album(
-        id varchar(255) not null comment "专辑id",
         name varchar(255) not null comment "专辑名称",
         artist_id varchar(255) default null comment "艺术家id",
         duration real default 0 not null comment"持续时间",
@@ -82,8 +81,7 @@ class MysqlInit:
         song_count integer default 0 not null comment "歌曲数量",
         full_text text default null comment "专辑描述",
         release_time date comment"发行时间",
-        primary key(id) using btree,
-        index album_id (id),
+        primary key(name) using btree,
         index album_name (name),
         index album_artist_id (artist_id),
         index album_genre (genre),
@@ -95,10 +93,9 @@ class MysqlInit:
         mysql_con.sql2commit("drop table if exists artist;")
         artist_table_sql = """
         create table artist(
-        id varchar(255) not null comment "艺术家id",
         name varchar(255) not null comment "艺术家名称",
         gender varchar(3) default "其他" comment "艺术家性别",
-        primary key(id) using btree,
+        primary key(name) using btree,
         index artist_name (name),
         index artist_gender (gender));
         """
@@ -108,7 +105,7 @@ class MysqlInit:
         mysql_con.sql2commit("drop table if exists artist_genre;")
         artist_genre_table_sql = """
         create table artist_genre(
-        artist_id varchar(255) not null comment"艺术家id",
+        artist_name varchar(255) not null comment"艺术家名称",
         genre_id varchar(255) not null comment "风格id",
         primary key(artist_id,genre_id));
         """
@@ -131,8 +128,8 @@ class MysqlInit:
         create table media(
         id varchar(255) not null comment"歌曲文件id,文件的sha256值",
         title varchar(255) not null comment"歌曲名称",
-        artist_id varchar(255) default "" not null comment "艺术家id",
-        album_id varchar(255) default "" not null comment"专辑id",
+        artist_name varchar(255) default "" not null comment "艺术家id",
+        album_name varchar(255) default "" not null comment"专辑id",
         genre_id varchar(255) default "" not null comment"歌曲风格",
         media_path text not null comment"音乐文件路径",
         lyric_path text default null comment"歌词文件路径",
@@ -143,8 +140,8 @@ class MysqlInit:
         update_at datetime comment"数据更新时间",
         primary key(id),
         index me_title (title),
-        index me_aid (artist_id),
-        index me_albid (album_id),
+        index me_aname (artist_name),
+        index me_albname (album_name),
         index me_genre (genre_id),
         index me_mepath (media_path(255)),
         index me_lypath (lyric_path(255)),

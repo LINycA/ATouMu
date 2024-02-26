@@ -43,6 +43,10 @@ class YamlConfig:
     # 系统设置获取
     def settings_conf(self):
         return self.load_yaml.get("settings")
+    
+    # 媒体文件夹路径
+    def media_path_conf(self) -> str:
+        return self.load_yaml.get("media_path")
 
 if __name__ == '__main__':
     conf = YamlConfig()
