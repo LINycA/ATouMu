@@ -134,7 +134,7 @@ class MysqlInit:
         media_path text not null comment"音乐文件路径",
         lyric_path text default null comment"歌词文件路径",
         image_path text default null comment"图片文件路径",
-        size integer default 0 not null comment"文件大小",
+        size real default 0 not null comment"文件大小",
         duration real default 0 not null comment"歌曲时长",
         create_at datetime comment"数据创建时间",
         update_at datetime comment"数据更新时间",

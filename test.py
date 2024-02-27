@@ -1,6 +1,4 @@
-import re
+import qrcode
 
-a = "a123sdf@asdf.gmail"
-
-if b := re.findall(r"\s",a):
-    print(b)
+qr = qrcode.make("asdf")
+qr.save('./test.jpeg')

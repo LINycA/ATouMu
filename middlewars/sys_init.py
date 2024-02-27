@@ -40,10 +40,11 @@ class SysInit:
         try:
             conf_dict = self.yaml_conf.load_yaml
             using_db = conf.get("using_db")
+            media_path = conf.get("media_path") if conf.get("media_path") else getcwd()
             conf_dict.update({
                 "sys_init":True,
                 "using_db":using_db,
-                "media_path":getcwd(),
+                "media_path":media_path,
                 "db":{using_db:{}}
             })
             if using_db == "sqlite":
