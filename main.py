@@ -61,6 +61,7 @@ def VerifyCode():
     except:
         logger.error(format_exc())
         return PARAMS_ERROR
+    
 # 用户注册接口，等待添加系统设置验证
 @app.post("/api/register")
 @check_sys_init_wrap
@@ -102,7 +103,7 @@ def Settings():
         return TOKEN_ERROR
     try:
         date = json.loads(request.data)
-        res = dispatcher
+        res = dispatcher.settings_params(data=date,token=token)
         return res
     except:
         logger.error(format_exc())

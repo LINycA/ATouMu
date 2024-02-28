@@ -127,7 +127,7 @@ class SqliteInit:
         media_path text not null,
         lyric_path text default "" not null,
         image_path text default "" not null,
-        size integer default 0 not null,
+        size read default 0 not null,
         duration real default 0 not null,
         create_at datetime,
         update_at datetime,
