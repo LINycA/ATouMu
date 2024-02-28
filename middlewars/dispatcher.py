@@ -9,6 +9,7 @@ from const import *
 from users import User,Login,TokenCheck,Register
 from middlewars import SysInit,Email
 from utils import YamlConfig
+from settings import Settings
 
 
 class RequestParamsCheck:
@@ -204,3 +205,38 @@ class RequestParamsCheck:
                           password=data.get("password"),email=data.get("email"),
                           phone=data.get("phone"),gender=data.get("gender"))
         return res
+
+    # 系统设置
+    def settings_params(self,data: dict,token: str) -> Response:
+        expire,admin = self.tk_check.check_token(token=token)
+        if expire:
+            return TOKEN_EXPIRE
+        if not admin:
+            return PERMISSION_ERROR
+        if "action" not in data:
+            return PARAMS_ERROR
+        settings = Settings()
+        action_keys = ["get","modify","email_test"]
+        action = data.get("action")
+        if action not in action_keys:
+            return PARAMS_ERROR
+        if action == "get":
+            return settings.get_settings_info()
+        elif action == "modify":
+            if "regist" in data:
+                regist_keys = ["regist_allow","regist_auth","email_conf"]
+                for key in regist_keys:
+                    if key not in data.get("regist"):
+                        return PARAMS_ERROR
+                regist_allow = data.get("regist").get("regist_allow")
+                regist_auth = data.get("regist").get("regist_auth")
+                email_conf = data.get("regist").get("email_conf")
+                return settings.register_allow(registe_allow=regist_allow,registe_auth=regist_auth,email_conf=email_conf)
+            if "media" in data:
+                if "scan_path" not in data.get("media"):
+                    return PARAMS_ERROR
+                scan_path = data.get("media").get("scan_path")
+                return settings.scan_path(scan_path=scan_path)
+        elif action == "email_test":
+            return settings.email_conf_test()
+    
