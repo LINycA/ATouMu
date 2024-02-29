@@ -210,7 +210,9 @@ class RequestParamsCheck:
     def settings_params(self,data: dict,token: str) -> Response:
         expire,admin = self.tk_check.check_token(token=token)
         if expire:
-            return TOKEN_EXPIRE
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
         if not admin:
             return PERMISSION_ERROR
         if "action" not in data:

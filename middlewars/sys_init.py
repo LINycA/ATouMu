@@ -16,8 +16,9 @@ class SysInit:
     # 生成jwt密钥
     def _gen_jwt_secret_key(self) -> str:
         secret_key = uuid4()
-        sql = f"insert into property(name,value) values(\"secret_key\",\"{secret_key}\");"
-        return sql
+        yaml_conf = self.yaml_conf.load_yaml
+        yaml_conf.update({"jwt_secret_key":str(secret_key)})
+        self.yaml_conf.safe_dump_conf(yaml_conf)
     # 初始化管理员
     def _adminuserInit(self,userconf:dict) -> str:
         id = uuid()
@@ -39,6 +40,7 @@ class SysInit:
         """
         try:
             conf_dict = self.yaml_conf.load_yaml
+            self._gen_jwt_secret_key()
             using_db = conf.get("using_db")
             media_path = conf.get("media_path") if conf.get("media_path") else getcwd()
             conf_dict.update({
@@ -66,9 +68,7 @@ class SysInit:
                     # sqlite初始化管理员信息
                     sqlite_con = Sqlite_con()
                     user_sql = self._adminuserInit(user_conf)
-                    secret_key_sql = self._gen_jwt_secret_key()
                     res = sqlite_con.sql2commit(user_sql)
-                    sqlite_con.sql2commit(secret_key_sql)
                 except Exception as e:
                     logger.error(e)
                     return False
@@ -98,9 +98,7 @@ class SysInit:
                     # mysql初始化管理员信息
                     mysql_con = MysqlCon()
                     user_sql = self._adminuserInit(user_conf)
-                    secret_key_sql = self._gen_jwt_secret_key()
                     mysql_con.sql2commit(user_sql)
-                    mysql_con.sql2commit(secret_key_sql)
                 except Exception as e:
                     logger.error(e)
                 return True

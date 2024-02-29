@@ -120,6 +120,7 @@ class SqliteInit:
         media_table_sql = """
         create table media(
         id varchar(255) not null,
+        netease_id varchar(255) default null,
         title varchar(255) not null,
         artist_name varchar(255) default "" not null,
         album_name varchar(255) default "" not null,

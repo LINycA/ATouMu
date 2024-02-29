@@ -48,6 +48,9 @@ class YamlConfig:
     def media_path_conf(self) -> str:
         return self.load_yaml.get("media_path")
 
+    def jwt_secret_key(self) -> str:
+        return self.load_yaml.get("jwt_secret_key")
+
 if __name__ == '__main__':
     conf = YamlConfig()
     print(conf.sqlite_conf())
