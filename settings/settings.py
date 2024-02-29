@@ -45,15 +45,15 @@ class Settings:
             logger.error(format_exc())
             return SETTING_ERROR
     # 设置媒体文件扫描路径
-    def scan_path(self,scan_path:str) -> Response:
+    def scan_path(self,scan_path:str,scan_regular_time:str) -> Response:
         yaml_conf = YamlConfig()
         if path.exists(scan_path):
-            if path.isdir(scan_path):
+            if not path.isdir(scan_path):
                 return SCAN_PATH_ERROR
             else:
                 conf = yaml_conf.load_yaml
-                conf.update({"media_path":scan_path})
-                yaml_conf.safe_dump_conf(yaml_conf)
+                conf.update({"media_path":scan_path,"scan_regular_time":scan_regular_time})
+                yaml_conf.safe_dump_conf(conf)
                 return SETTING_SUCCESS
         return SCAN_PATH_ERROR
     # 测试邮件配置是否可用

@@ -7,7 +7,7 @@ from loguru import logger
 
 from const import *
 from users import User,Login,TokenCheck,Register
-from middlewars import SysInit,Email
+from middlewars import SysInit,Email,FileScan
 from utils import YamlConfig
 from settings import Settings
 
@@ -91,9 +91,10 @@ class RequestParamsCheck:
     # 用户操作分发
     def user_params(self, data: dict,token:str) -> Response:
         expire,admin = self.tk_check.check_token(token=token)
-        # 判断token是否过期
         if expire:
-            return TOKEN_EXPIRE
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
         if "action" not in data or "user" not in data:
             return PARAMS_ERROR
         action = data.get("action")
@@ -233,10 +234,21 @@ class RequestParamsCheck:
                 email_conf = data.get("regist").get("email_conf")
                 return settings.register_allow(registe_allow=regist_allow,registe_auth=regist_auth,email_conf=email_conf)
             if "media" in data:
-                if "scan_path" not in data.get("media"):
+                if "scan_path" not in data.get("media") or "scan_regular_time" not in data.get("media"):
                     return PARAMS_ERROR
                 scan_path = data.get("media").get("scan_path")
-                return settings.scan_path(scan_path=scan_path)
+                scan_regular_time = data.get("media").get("scan_regular_time")
+                return settings.scan_path(scan_path=scan_path,scan_regular_time=scan_regular_time)
         elif action == "email_test":
             return settings.email_conf_test()
     
+    # 音乐文件扫描
+    def scan_params(self,token:str) -> Response:
+        expire,admin = self.tk_check.check_token(token=token)
+        if expire:
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
+        if not admin:
+            return PERMISSION_ERROR
+        return FileScan().start_scan()

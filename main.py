@@ -5,7 +5,7 @@ from loguru import logger
 from flask import Flask,send_file,request,make_response
 
 from const import *
-from middlewars import check_sys_init,check_sys_init_wrap,RequestParamsCheck
+from middlewars import check_sys_init,check_sys_init_wrap,RequestParamsCheck,FileScan
 
 
 dispatcher = RequestParamsCheck()
@@ -108,7 +108,18 @@ def Settings():
     except:
         logger.error(format_exc())
         return PARAMS_ERROR
-
+# 文件扫描
+fs = FileScan()
+fs.regular_time_scan()
+@app.get("/api/scan")
+@check_sys_init_wrap
+def Scan():
+    try:
+        token = request.headers["Authorization"]
+    except:
+        return TOKEN_ERROR
+    res = dispatcher.scan_params(token=token)
+    return res
 # 媒体接口，未完成
 @app.get("/api/music")
 @check_sys_init_wrap
