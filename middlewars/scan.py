@@ -1,4 +1,4 @@
-from os import path,getcwd,listdir
+from os import path,getcwd,listdir,mkdir
 from threading import Thread
 from traceback import format_exc
 from datetime import datetime
@@ -19,7 +19,17 @@ class FileScan:
         self.using_db = self.yaml_conf.check_sys_usingdb()
         self.lrc_root_path = path.join(getcwd(),"data","lrcs")
         self.album_img_root_path = path.join(getcwd(),"data","album_img")
-
+    # 检测文件夹是否存在，不存在则创建
+    def _dir_init(self):
+        dir_list = listdir(getcwd())
+        if "data" not in dir_list:
+            mkdir(path.join(getcwd(),"data"))
+            mkdir(path.join(getcwd(),"data","album_img"))
+            mkdir(path.join(getcwd(),"data","artist_img"))
+            mkdir(path.join(getcwd(),"data","lrcs"))
+        if "log" not in dir_list:
+            mkdir(path.join(getcwd(),"log"))
+    # 文件扫描
     def scan(self):
         if self.using_db == "sqlite":
             self.sql_con = Sqlite_con()
