@@ -5,4 +5,5 @@ from .sys_init import SysInit
 from .verify_code import VerifyCode
 from .email_send import Email
 from .scan import FileScan
+from .info_completion import InfoCompletion
 from .dispatcher import RequestParamsCheck

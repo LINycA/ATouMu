@@ -7,8 +7,8 @@ from loguru import logger
 
 from const import *
 from users import User,Login,TokenCheck,Register
-from middlewars import SysInit,Email,FileScan
-from utils import YamlConfig,InfoCompletion
+from middlewars import SysInit,Email,FileScan,InfoCompletion
+from utils import YamlConfig
 from settings import Settings
 
 

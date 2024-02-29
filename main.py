@@ -109,7 +109,6 @@ def Settings():
         logger.error(format_exc())
         return PARAMS_ERROR
 # 文件扫描
-
 @app.get("/api/scan")
 @check_sys_init_wrap
 def Scan():
@@ -118,6 +117,16 @@ def Scan():
     except:
         return TOKEN_ERROR
     res = dispatcher.scan_params(token=token)
+    return res
+# 音乐信息刮削
+@app.get("/api/info_completion")
+@check_sys_init_wrap
+def InfoCompletion():
+    try:
+        token = request.headers["Authorization"]
+    except:
+        return TOKEN_ERROR
+    res = dispatcher.completion_params(token=token)
     return res
 # 媒体接口，未完成
 @app.get("/api/music")
