@@ -13,10 +13,8 @@ from const import *
 
 class Email:
     def __init__(self):
-        self.yaml_conf = YamlConfig()
         self.verify_code = VerifyCode()
-        self.email_conf = self.yaml_conf.email_conf()
-
+    # 消息构建
     def _message(self,from_email:str,send_to:str,nickname:str,code:str):
         # 构建邮件内容
         subject = "ATouMu音乐注册验证码"
@@ -30,18 +28,20 @@ class Email:
         return msg
     # 邮件发送功能
     def email_send_fun(self,send_to:str,message:MIMEMultipart):
-        server = smtplib.SMTP(self.email_conf.get("server"),int(self.email_conf.get("port")))
+        email_conf = YamlConfig().email_conf()
+        server = smtplib.SMTP(email_conf.get("server"),int(email_conf.get("port")))
         server.starttls()
-        server.login(self.email_conf.get("username"),self.email_conf.get("password"))
-        server.sendmail(self.email_conf.get("username"),send_to,message.as_string())
+        server.login(email_conf.get("username"),email_conf.get("password"))
+        server.sendmail(email_conf.get("username"),send_to,message.as_string())
         server.quit()
     # 邮件发送功能
     def send_email(self,send_to:str,nickname:str):
+        email_conf = YamlConfig().email_conf()
         try:
             code = self.verify_code.generate_code(send_to)
             if not code:
                 return EMAIL_VERIFY_CODE_ERROR
-            message = self._message(self.email_conf.get("username"),send_to=send_to,nickname=nickname,code=code)
+            message = self._message(email_conf.get("username"),send_to=send_to,nickname=nickname,code=code)
             self.email_send_fun(send_to=send_to,message=message)
             return EMAIL_VERIFY_CODE_SUCCESS
         except:
@@ -49,8 +49,9 @@ class Email:
             return EMAIL_VERIFY_CODE_ERROR
     # 测试邮件配置是否正确
     def send_email_test(self):
+        email_conf = YamlConfig().email_conf()
         try:
-            email = self.email_conf.get("username")
+            email = email_conf.get("username")
             msg = MIMEMultipart()
             msg["From"] = email
             msg["To"] = email
@@ -64,7 +65,8 @@ class Email:
 
     # 邮件配置功能
     def conf_email(self,server:str,port:int,username:str,password:str):
-        conf_dict = self.yaml_conf.load_yaml
+        yaml_conf = YamlConfig()
+        conf_dict = yaml_conf.load_yaml
         conf_dict.update({"email":{
             "server":server,
             "port":port,
@@ -72,7 +74,7 @@ class Email:
             "password":password
         }})
         try:
-            self.yaml_conf.safe_dump_conf(conf_dict)
+            yaml_conf.safe_dump_conf(conf_dict)
         except:
             logger.error(format_exc())
 

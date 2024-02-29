@@ -15,7 +15,6 @@ from settings import Settings
 class RequestParamsCheck:
     def __init__(self):
         self.tk_check = TokenCheck()
-        self.yaml_conf = YamlConfig()
         self.email = Email()
     # 数据库初始化操作
     def sys_init_params(self, data: dict) -> Response:
@@ -153,16 +152,12 @@ class RequestParamsCheck:
 
     # 验证码请求
     def verifycode_params(self,data: dict) -> Response:
-        settings_conf = self.yaml_conf.settings_conf()
+        yaml_conf = YamlConfig()
+        settings_conf = yaml_conf.settings_conf()
         if not settings_conf.get("registe_allow"):
             return REGIST_UNALLOW
-        action_keys = ["get_code"]
         action = data.get("action")
-        if action not in action_keys:
-            return PARAMS_ERROR
-        verify_info = data.get("verify_info")
-        email = verify_info.get("email")
-        nickname = verify_info.get("nick_name")
+        email = data.get("email")
         self.user = User()
         if not re.match(r"^[0-9a-zA-Z._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$",email):
             return PARAMS_ERROR        
@@ -170,6 +165,9 @@ class RequestParamsCheck:
         if action == "regist_get_code":
             if self.user.check_user_exists(email=email):
                 return USER_EXISTS
+            nickname = data.get("nick_name")
+            if nickname is None or nickname == "":
+                return PARAMS_ERROR
             if res := self.email.send_email(send_to=email,nickname=nickname):
                 return res
         # 用户找回密码获取验证码
