@@ -8,7 +8,7 @@ from loguru import logger
 from const import *
 from users import User,Login,TokenCheck,Register
 from middlewars import SysInit,Email,FileScan
-from utils import YamlConfig
+from utils import YamlConfig,InfoCompletion
 from settings import Settings
 
 
@@ -16,6 +16,8 @@ class RequestParamsCheck:
     def __init__(self):
         self.tk_check = TokenCheck()
         self.email = Email()
+        FileScan().regular_time_scan() # 定时扫描文件变化
+        InfoCompletion().regular_start_completion() # 定时刮削音乐信息，定时暂不可修改
     # 数据库初始化操作
     def sys_init_params(self, data: dict) -> Response:
         """
@@ -252,3 +254,14 @@ class RequestParamsCheck:
         if not admin:
             return PERMISSION_ERROR
         return FileScan().start_scan()
+    
+    # 音乐信息刮削
+    def completion_params(self,token:str) -> Response:
+        expire,admin = self.tk_check.check_token(token=token)
+        if expire:
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
+        if not admin:
+            return PERMISSION_ERROR
+        return InfoCompletion().start_completion()

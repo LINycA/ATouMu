@@ -5,7 +5,7 @@ from loguru import logger
 from flask import Flask,send_file,request,make_response
 
 from const import *
-from middlewars import check_sys_init,check_sys_init_wrap,RequestParamsCheck,FileScan
+from middlewars import check_sys_init,check_sys_init_wrap,RequestParamsCheck
 
 
 dispatcher = RequestParamsCheck()
@@ -109,8 +109,7 @@ def Settings():
         logger.error(format_exc())
         return PARAMS_ERROR
 # 文件扫描
-fs = FileScan()
-fs.regular_time_scan()
+
 @app.get("/api/scan")
 @check_sys_init_wrap
 def Scan():
