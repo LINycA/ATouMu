@@ -1,5 +1,5 @@
 from datetime import datetime
-from os import getcwd,path
+from os import getcwd,path,listdir,mkdir
 from traceback import format_exc
 
 from shortuuid import uuid
@@ -13,12 +13,12 @@ from utils import Sqlite_con,MysqlCon,YamlConfig,Password
 class SysInit:
     def __init__(self):
         self.yaml_conf = YamlConfig()
-
+    # 生成jwt密钥
     def _gen_jwt_secret_key(self) -> str:
         secret_key = uuid4()
         sql = f"insert into property(name,value) values(\"secret_key\",\"{secret_key}\");"
         return sql
-
+    # 初始化管理员
     def _adminuserInit(self,userconf:dict) -> str:
         id = uuid()
         create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -29,7 +29,7 @@ class SysInit:
         email = userconf.get("email")
         sql = f'insert into users(user_id,nick_name,user_name,email,password,admin,create_time) values("{id}","{nick_name}","{user_name}","{email}","{pass_}",1,"{create_time}");'
         return sql
-
+    # 系统初始化
     def sys_init(self,conf:dict,user_conf:dict) -> bool:
         """
         初始化系统数据库
