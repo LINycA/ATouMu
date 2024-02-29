@@ -127,6 +127,7 @@ class MysqlInit:
         media_table_sql = """
         create table media(
         id varchar(255) not null comment"歌曲文件id,文件的sha256值",
+        netease_id varchar(255) default null comment"歌曲在网易云平台的id",
         title varchar(255) not null comment"歌曲名称",
         artist_name varchar(255) default "" not null comment "艺术家id",
         album_name varchar(255) default "" not null comment"专辑id",

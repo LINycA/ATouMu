@@ -7,7 +7,7 @@ from loguru import logger
 
 from const import *
 from users import User,Login,TokenCheck,Register
-from middlewars import SysInit,Email
+from middlewars import SysInit,Email,FileScan
 from utils import YamlConfig
 from settings import Settings
 
@@ -15,7 +15,6 @@ from settings import Settings
 class RequestParamsCheck:
     def __init__(self):
         self.tk_check = TokenCheck()
-        self.yaml_conf = YamlConfig()
         self.email = Email()
     # 数据库初始化操作
     def sys_init_params(self, data: dict) -> Response:
@@ -92,9 +91,10 @@ class RequestParamsCheck:
     # 用户操作分发
     def user_params(self, data: dict,token:str) -> Response:
         expire,admin = self.tk_check.check_token(token=token)
-        # 判断token是否过期
         if expire:
-            return TOKEN_EXPIRE
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
         if "action" not in data or "user" not in data:
             return PARAMS_ERROR
         action = data.get("action")
@@ -153,16 +153,12 @@ class RequestParamsCheck:
 
     # 验证码请求
     def verifycode_params(self,data: dict) -> Response:
-        settings_conf = self.yaml_conf.settings_conf()
+        yaml_conf = YamlConfig()
+        settings_conf = yaml_conf.settings_conf()
         if not settings_conf.get("registe_allow"):
             return REGIST_UNALLOW
-        action_keys = ["get_code"]
         action = data.get("action")
-        if action not in action_keys:
-            return PARAMS_ERROR
-        verify_info = data.get("verify_info")
-        email = verify_info.get("email")
-        nickname = verify_info.get("nick_name")
+        email = data.get("email")
         self.user = User()
         if not re.match(r"^[0-9a-zA-Z._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$",email):
             return PARAMS_ERROR        
@@ -170,6 +166,9 @@ class RequestParamsCheck:
         if action == "regist_get_code":
             if self.user.check_user_exists(email=email):
                 return USER_EXISTS
+            nickname = data.get("nick_name")
+            if nickname is None or nickname == "":
+                return PARAMS_ERROR
             if res := self.email.send_email(send_to=email,nickname=nickname):
                 return res
         # 用户找回密码获取验证码
@@ -210,7 +209,9 @@ class RequestParamsCheck:
     def settings_params(self,data: dict,token: str) -> Response:
         expire,admin = self.tk_check.check_token(token=token)
         if expire:
-            return TOKEN_EXPIRE
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
         if not admin:
             return PERMISSION_ERROR
         if "action" not in data:
@@ -233,10 +234,21 @@ class RequestParamsCheck:
                 email_conf = data.get("regist").get("email_conf")
                 return settings.register_allow(registe_allow=regist_allow,registe_auth=regist_auth,email_conf=email_conf)
             if "media" in data:
-                if "scan_path" not in data.get("media"):
+                if "scan_path" not in data.get("media") or "scan_regular_time" not in data.get("media"):
                     return PARAMS_ERROR
                 scan_path = data.get("media").get("scan_path")
-                return settings.scan_path(scan_path=scan_path)
+                scan_regular_time = data.get("media").get("scan_regular_time")
+                return settings.scan_path(scan_path=scan_path,scan_regular_time=scan_regular_time)
         elif action == "email_test":
             return settings.email_conf_test()
     
+    # 音乐文件扫描
+    def scan_params(self,token:str) -> Response:
+        expire,admin = self.tk_check.check_token(token=token)
+        if expire:
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
+        if not admin:
+            return PERMISSION_ERROR
+        return FileScan().start_scan()

@@ -1,12 +1,15 @@
 from yaml import safe_load,safe_dump
-from os import path,getcwd
+from os import path,getcwd,mkdir
 
 
 class YamlConfig:
     def __init__(self):
+        config_dir = path.join(getcwd(),"config")
+        if not path.exists(config_dir):
+            mkdir(config_dir)
         self.config_path = path.join(getcwd(),"config","config.yaml")
         if not path.exists(self.config_path):
-            base_conf = {"sys_init":False,"settings":{"registe_allow":True,"registe_auth":False}}
+            base_conf = {"sys_init":False,"settings":{"registe_allow":True,"registe_auth":False},"scan_regular_time":"00:00","media_path":getcwd()}
             base_conf_yaml = safe_dump(base_conf)
             with open(self.config_path,"w",encoding="utf-8")as f:
                 f.write(base_conf_yaml)
@@ -47,6 +50,17 @@ class YamlConfig:
     # 媒体文件夹路径
     def media_path_conf(self) -> str:
         return self.load_yaml.get("media_path")
+
+    # 获取jwt_secret_key
+    def jwt_secret_key(self) -> str:
+        return self.load_yaml.get("jwt_secret_key")
+
+    # 获取定时扫描世界
+    def regular_time(self) -> str:
+        return self.load_yaml.get("scan_regular_time")
+    
+
+
 
 if __name__ == '__main__':
     conf = YamlConfig()
