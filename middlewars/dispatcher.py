@@ -1,5 +1,6 @@
 from os import path, getcwd, mkdir
 import re
+from traceback import format_exc
 
 from flask import Response
 from pymysql import Connect
@@ -97,7 +98,7 @@ class RequestParamsCheck:
             if type(expire) is bool:
                 return TOKEN_EXPIRE
             return expire
-        if "action" not in data or "user" not in data:
+        if "action" not in data:
             return PARAMS_ERROR
         action = data.get("action")
         action_keys = ["add", "delete", "query", "modify", "detail","check"]
@@ -141,8 +142,18 @@ class RequestParamsCheck:
                                     gender=user_info_dict.get("gender"), admin=user_info_dict.get("admin"))
         # 用户简单信息
         elif action == "query":
-            res = user.user_query()
-            return res
+            page_keys = ["page","limit"]
+            for key in page_keys:
+                if key not in data:
+                    return PARAMS_ERROR
+            try:
+                page = int(data.get("page"))
+                limit = int(data.get("limit"))
+                res = user.user_query(page=page,limit=limit)
+                return res
+            except:
+                logger.error(format_exc())
+                return PARAMS_ERROR
         # 用户详细信息
         elif action == "detail":
             if admin:
