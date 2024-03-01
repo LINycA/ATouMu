@@ -142,18 +142,20 @@ class RequestParamsCheck:
                                     gender=user_info_dict.get("gender"), admin=user_info_dict.get("admin"))
         # 用户简单信息
         elif action == "query":
-            page_keys = ["page","limit"]
-            for key in page_keys:
-                if key not in data:
+            if admin:
+                page_keys = ["page","limit"]
+                for key in page_keys:
+                    if key not in data:
+                        return PARAMS_ERROR
+                try:
+                    page = int(data.get("page"))
+                    limit = int(data.get("limit"))
+                    res = user.user_query(page=page,limit=limit)
+                    return res
+                except:
+                    logger.error(format_exc())
                     return PARAMS_ERROR
-            try:
-                page = int(data.get("page"))
-                limit = int(data.get("limit"))
-                res = user.user_query(page=page,limit=limit)
-                return res
-            except:
-                logger.error(format_exc())
-                return PARAMS_ERROR
+            return PERMISSION_ERROR
         # 用户详细信息
         elif action == "detail":
             if admin:
