@@ -102,16 +102,24 @@ class FileScan:
             file_list = [path.join(media_path,i) for i in listdir(media_path)]
             for file in file_list:
                 if path.isdir(file):
-                    if "." in file:
+                    try:
+                        for n in listdir(file):
+                            file_list.append(path.join(file,n))
+                    except:
+                        logger.error(format_exc())
                         continue
-                    for n in listdir(file):
-                        file_list.append(path.join(file,n))
                 else:
                     file_type = file.split(".")[-1].lower()
                     if file_type == "mp3":
-                        mp3_info_extract(file_path=file)
+                        try:
+                            mp3_info_extract(file_path=file)
+                        except:
+                            logger.error(format_exc())
                     elif file_type == "flac":
-                        flac_info_extract(file_path=file)
+                        try:
+                            flac_info_extract(file_path=file)
+                        except:
+                            logger.error(format_exc())
             logger.success("扫描结束")
         except:
             logger.error(format_exc())

@@ -74,10 +74,18 @@ class User:
             return USERQUERY_ERROR
 
     # 获取用户简略信息
-    def user_query(self) -> Response:
-        sql = f"select user_id,nick_name,user_name,admin,create_time,last_login from users;"
+    def user_query(self,page:int,limit:int) -> Response:
+        if type(page) is not int or type(limit) is not int:
+            return PARAMS_ERROR
+        if limit > 50 or limit < 0 or page < 0:
+            return PARAMS_ERROR
+        offset = (page-1)*limit
+        sql = f"select user_id,nick_name,user_name,admin,create_time,last_login from users limit {offset},{limit};"
+        sql_count = f"select count(1) from users;"
         try:
             res = self.sql_con.sql2commit(sql)
+            total_res = self.sql_con.sql2commit(sql=sql_count)
+            total = total_res[0][0]
             user_result = []
             for user in res:
                 user_dict = {
@@ -89,7 +97,7 @@ class User:
                     "last_login": user[5]
                 }
                 user_result.append(user_dict)
-            return trans_res({"ret":200,"msg":"成功","data":user_result})
+            return trans_res({"ret":200,"msg":"成功","data":{"users":user_result,"total":total}})
         except Exception as e:
             logger.error(e)
             return USERQUERY_ERROR
