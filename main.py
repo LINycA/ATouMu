@@ -137,10 +137,25 @@ def ScanStatus():
     try:
         token = request.headers.get("X-Nd-Authorization").replace("Bearer ","")
         res = dispatcher.scan_status_params(token=token)
+        res.headers["x-nd-authorization"] = token
         return res
     except:
         logger.error(format_exc())
         return PARAMS_ERROR
+
+# 获取封面
+@app.route("/rest/getCoverArt",methods=["GET"])
+def getCoverArt():
+    try:
+        data = {
+            "id":str(request.args.get("id"))
+        }
+        res = dispatcher.cover_art_params(data=data)
+        return res
+    except:
+        logger.error(format_exc())
+        return PARAMS_ERROR
+
 
 # 音乐信息刮削
 @app.get("/api/info_completion")
@@ -217,12 +232,23 @@ def Artist():
         return PARAMS_ERROR
 
 # 媒体接口，未完成
-@app.get("/api/music")
+@app.get("/rest/stream")
 @check_sys_init_wrap
 def get_musics():
-    response = make_response("Authorization")
-    response.headers["Authentization"] = "asdf"
-    return response
+    try:
+        print(request.headers)
+        data = {
+            "id":request.args.get("id")
+        }
+        res = dispatcher.media_stream_params(data=data)
+        res.headers["x-frame-options"] = "DENY"
+        res.headers["permissions-policy"] = "autoplay=(), camera=(), microphone=(), usb=()"
+        res.headers["x-content-type-options"] = "nosniff"
+        return res
+    except:
+        logger.error(format_exc())
+        return PARAMS_ERROR
+    return 
 
 
 if __name__ == '__main__':

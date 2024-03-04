@@ -61,21 +61,21 @@ class FileScan:
             curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             lrc_path = ""
             if lrc is not None and album is not None:
-                lrc_path = path.join(lrc_root_path,artist+"-"+album+"-"+title+".lrc")
+                lrc_path = path.join(lrc_root_path,media_id+".lrc")
                 with open(lrc_path,"w",encoding="utf-8")as f:
                     f.write(lrc)
             album_img_path = ""
             if jpeg is not None and album is not None:
-                album_img_path = path.join(album_img_root_path,artist+"-"+album+".jpeg")
+                album_img_path = path.join(album_img_root_path,album_id+".jpeg")
                 with open(album_img_path,"wb")as f:
                     f.write(jpeg)
             full_text = " ".join([artist,album,title])
             try:
                 media_sql = f"""insert or ignore into media_file
-                (id,path,title,album,artist,artist_id,album_artist,has_cover_art,size,suffix,duration,bit_rate,created_at,updated_at,full_text,album_artist_id,order_album_name,
+                (id,path,title,album,album_id,artist,artist_id,album_artist,has_cover_art,size,suffix,duration,bit_rate,created_at,updated_at,full_text,album_artist_id,order_album_name,
                 order_album_artist_name,order_artist_name,lyrics,channels,order_title) 
                 values
-                ("{media_id}","{file_path}","{title}","{album}","{artist}","{artist_id}","{album}","{has_cover_art}","{size}","{suffix}","{duration}",
+                ("{media_id}","{file_path}","{title}","{album}","{album_id}","{artist}","{artist_id}","{artist}","{has_cover_art}","{size}","{suffix}","{duration}",
                 "{bitrate}","{curdate}","{curdate}","{full_text}","{artist_id}","{album}","{artist}","{artist}","{lrc_path}","{channels}","{title}");"""
                 sql_con.sql2commit(media_sql)
             except:
@@ -172,7 +172,7 @@ class FileScan:
     def get_scan_status(self):
         sql_con = Sqlite_con()
         curtime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sql_media_count = "select count(1) from media;"
+        sql_media_count = "select count(1) from media_file;"
         media_count = sql_con.sql2commit(sql_media_count)[0][0]
         data = trans_res({
             "subsonic-response":{

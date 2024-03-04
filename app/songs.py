@@ -1,14 +1,14 @@
 from traceback import format_exc
+from os import path,getcwd
 
 from flask import Response
 from loguru import logger
 
-from utils import YamlConfig,Sqlite_con
+from utils import Sqlite_con
 from const import *
 
 class Songs:
     def get_all_song(self,page:int,limit:int,order_by:str,order:str) -> Response:
-        print(page,limit,order_by,order)
         if type(page) is not int or type(limit) is not int:
             return PARAMS_ERROR
         order_by_keys = ["id","title","artist_name","genre_id"]
@@ -31,7 +31,7 @@ class Songs:
             "artist": s[4],
             "artistId": s[5],
             "bitRate": s[6],
-            "bookmarkPosition": ...,
+            "bookmarkPosition": "",
             "channels": s[7],
             "compilation": s[8],
             "createdAt": s[9],
@@ -42,36 +42,65 @@ class Songs:
             "genres": "",
             "hasCoverArt": s[14],
             "id": s[15],
+            "lyrics":"",
             "orderAlbumArtistName": s[16],
             "orderAlbumName": s[17],
             "orderArtistName": s[18],
             "orderTitle": s[19],
             "path": s[20],
-            "playCount": '',
-            "playDate": '',
-            "rating": '',
+            "playCount": "",
+            "playDate": "",
+            "rating": "",
             "rgAlbumGain": s[21],
             "rgAlbumPeak": s[22],
             "rgTrackGain": s[23],
-            "rgTrackPeak": s[24],
-            "size": s[25],
-            "starred": '',
-            "starredAt": '',
-            "suffix": s[26],
-            "title": s[27],
-            "trackNumber": s[28],
-            "updatedAt": s[29],
-            "year": s[30]
+            "rgTrackPeak": s[23],
+            "size": s[24],
+            "starred": "",
+            "starredAt": "",
+            "suffix": s[25],
+            "title": s[26],
+            "trackNumber": s[27],
+            "updatedAt": s[28],
+            "year": s[29]
         } for s in media_file_res]
         for f in res_dic:
             mid = f.get("id")
-            annotation_sql = f"select play_count,play_date,rating,starred,starred_at where item_id = \"{mid}\";"
+            lrc_path = path.join(getcwd(),"data","lrcs",mid+".lrc")
+            if path.exists(lrc_path):
+                with open(lrc_path,"r",encoding="utf-8")as lrcf:
+                    lrc = lrcf.read()
+                f.update({"lyrics":lrc})
+            annotation_sql = f"select play_count,play_date,rating,starred,starred_at from annotation where item_id = \"{mid}\";"
             annotation_res = sql_con.sql2commit(annotation_sql)
-            f.update({
-                "playCount":annotation_res[0],
-                "playDate":annotation_res[1],
-                "rating":annotation_res[2],
-                "starred":annotation_res[3],
-                "starred_at":annotation_res[4]
-            })
-        return trans_res(res_dic)
+            if annotation_res:
+                f.update({
+                    "playCount":annotation_res[0],
+                    "playDate":annotation_res[1],
+                    "rating":annotation_res[2],
+                    "starred":annotation_res[3],
+                    "starred_at":annotation_res[4]
+                })
+        total_sql = "select count(1) from media_file;"
+        total = sql_con.sql2commit(total_sql)[0][0]
+        response = trans_res(res_dic)
+        response.headers["x-total-count"] = total
+        response.headers["x-frame-options"] = "DENY"
+        response.headers["permissions-policy"] = "autoplay=(), camera=(), microphone=(), usb=()"
+        response.headers["x-content-type-options"] = "nosniff"
+        return response
+
+    # 获取媒体文件路径
+    def get_song_path(self,id:str) -> str:
+        get_path_sql = f"select path,duration from media_file where id=\"{id}\""
+        sql_con = Sqlite_con()
+        res = sql_con.sql2commit(get_path_sql)[0]
+        try:
+            res_data = {
+                "file_path":res[0],
+                "duration":res[1]
+            }
+            return res_data
+        except:
+            logger.error(format_exc())
+            return None

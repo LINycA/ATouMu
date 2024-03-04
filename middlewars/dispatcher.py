@@ -2,7 +2,7 @@ from os import path, getcwd, mkdir
 import re
 from traceback import format_exc
 
-from flask import Response
+from flask import Response,send_file
 from pymysql import Connect
 from loguru import logger
 
@@ -261,47 +261,67 @@ class RequestParamsCheck:
             return PERMISSION_ERROR
         return InfoCompletion().start_completion()
 
+    # 获取媒体信息
     def songs_params(self,token:str,data:dict) -> Response:
         expire,admin = self.tk_check.check_token(token=token)
         if expire:
             if type(expire) is bool:
                 return TOKEN_EXPIRE
             return expire
-        limit = data.get("limit")
-        offset = data.get("offset")
+        limit = int(data.get("limit"))
+        offset = int(data.get("offset"))
         order = data.get("order")
         sort = data.get("sort")
         res = Songs().get_all_song(offset,limit,sort,order)
         return res
     
+    # 获取专辑信息
     def album_params(self,token:str,data:dict) -> Response:
         expire,admin = self.tk_check.check_token(token=token)
         if expire:
             if type(expire) is bool:
                 return TOKEN_EXPIRE
             return expire
-        limit = data.get("limit")
-        offset = data.get("offset")
+        limit = int(data.get("limit"))
+        offset = int(data.get("offset"))
         order = data.get("order")
         sort = data.get("sort")
         res = Album().get_all_Album(offset,limit,sort,order)
-        print(res)
         return res
     
+    # 获取艺术家信息
     def artist_params(self,token:str,data:dict) -> Response:
         expire,admin = self.tk_check.check_token(token=token)
         if expire:
             if type(expire) is bool:
                 return TOKEN_EXPIRE
             return expire
-        limit = data.get("limit")
-        offset = data.get("offset")
+        limit = int(data.get("limit"))
+        offset = int(data.get("offset"))
         order = data.get("order")
         sort = data.get("sort")
         res = Artist().get_all_artist(offset,limit,sort,order)
-        print(res)
+        print(res.json)
         return res
         
+    # 获取专辑封面
+    def cover_art_params(self,data:dict) -> Response:
+        id = data.get("id")
+        with open(path.join(getcwd(),"data","album_img",id+".jpeg"),"rb")as f:
+            img_byte = f.read()
+        return img_byte
+
+    # 媒体流
+    def media_stream_params(self,data:dict):
+        id = data.get("id")
+        songs = Songs()
+        res_dict = songs.get_song_path(id=id)
+        if res_dict:
+            response = send_file(res_dict.get("file_path"))
+            response.headers["X-Content-Duration"] = res_dict.get("duration")
+            return response
+        return PARAMS_ERROR
+            
     # 系统心跳
     def keepalive_params(self) -> Response:
         return Keepalive().keepalive()
