@@ -7,16 +7,12 @@ from flask import Response
 from shortuuid import uuid
 
 from const import *
-from utils import Sqlite_con, MysqlCon, YamlConfig
+from utils import Sqlite_con, YamlConfig
 
 
 class User:
     def __init__(self):
-        using_db = YamlConfig().check_sys_usingdb()
-        if using_db == "sqlite":
-            self.sql_con = Sqlite_con()
-        elif using_db == "mysql":
-            self.sql_con = MysqlCon()
+        self.sql_con = Sqlite_con()
 
     # 用户数据检测
     def user_info_check(self,nickname:str,email:str,phone:str,gender:str,username:str=""):

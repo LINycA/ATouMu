@@ -1,5 +1,6 @@
 import json
 from traceback import format_exc
+import re
 
 from loguru import logger
 from flask import Flask,send_file,request,make_response
@@ -38,12 +39,23 @@ def sys_init_api():
     else:
         return SYSINIT_INITED
 
+# 系统心跳包
+@app.get("/api/keepalive/keepalive")
+@check_sys_init_wrap
+def Keepalive():
+    try:
+        return dispatcher.keepalive_params()
+    except:
+        logger.error(format_exc())
+        return PARAMS_ERROR
+
 # 用户登陆接口
-@app.post("/api/login")
+@app.post("/auth/login")
 @check_sys_init_wrap
 def Login():
     try:
         data = json.loads(request.data)
+        print(data)
         res = dispatcher.login_params(data=data)
         return res
     except:
@@ -51,7 +63,7 @@ def Login():
         return PARAMS_ERROR
 
 # 验证码接口
-@app.post("/api/verifycode")
+@app.route("/api/verifycode",methods=["POST","GET"])
 @check_sys_init_wrap
 def VerifyCode():
     try:
@@ -118,6 +130,18 @@ def Scan():
         return TOKEN_ERROR
     res = dispatcher.scan_params(token=token)
     return res
+
+# 文件扫描状态
+@app.route("/rest/getScanStatus",methods=["GET","POST"])
+def ScanStatus():
+    try:
+        token = request.headers.get("X-Nd-Authorization").replace("Bearer ","")
+        res = dispatcher.scan_status_params(token=token)
+        return res
+    except:
+        logger.error(format_exc())
+        return PARAMS_ERROR
+
 # 音乐信息刮削
 @app.get("/api/info_completion")
 @check_sys_init_wrap
@@ -128,6 +152,70 @@ def InfoCompletion():
         return TOKEN_ERROR
     res = dispatcher.completion_params(token=token)
     return res
+
+# 获取音乐信息
+@app.get("/api/song")
+@check_sys_init_wrap
+def Songs():
+    try:
+        if "X-Nd-Authorization" in request.headers:
+            token = request.headers.get("X-Nd-Authorization").replace("Bearer ","")
+        else:
+            token = request.headers.get("Authorization")
+        data = {
+            "limit":int(request.args.get("_end")),
+            "offset":int(request.args.get("_start")),
+            "sort":request.args.get("_sort"),
+            "order":request.args.get("_order")
+        }
+        res = dispatcher.songs_params(token=token,data=data)
+        return res
+    except:
+        logger.error(format_exc())
+        return PARAMS_ERROR
+
+# 获取专辑信息
+@app.get("/api/album")
+@check_sys_init_wrap
+def Album():
+    try:
+        if "X-Nd-Authorization" in request.headers:
+            token = request.headers.get("X-Nd-Authorization").replace("Bearer ","")
+        else:
+            token = request.headers.get("Authorization")
+        data = {
+            "limit":int(request.args.get("_end")),
+            "offset":int(request.args.get("_start")),
+            "sort":request.args.get("_sort"),
+            "order":request.args.get("_order")
+        }
+        res = dispatcher.album_params(token=token,data=data)
+        return res
+    except:
+        logger.error(format_exc())
+        return PARAMS_ERROR
+    
+# 获取艺术家信息
+@app.get("/api/artist")
+@check_sys_init_wrap
+def Artist():
+    try:
+        if "X-Nd-Authorization" in request.headers:
+            token = request.headers.get("X-Nd-Authorization").replace("Bearer ","")
+        else:
+            token = request.headers.get("Authorization")
+        data = {
+            "limit":int(request.args.get("_end")),
+            "offset":int(request.args.get("_start")),
+            "sort":request.args.get("_sort"),
+            "order":request.args.get("_order")
+        }
+        res = dispatcher.artist_params(token=token,data=data)
+        return res
+    except:
+        logger.error(format_exc())
+        return PARAMS_ERROR
+
 # 媒体接口，未完成
 @app.get("/api/music")
 @check_sys_init_wrap

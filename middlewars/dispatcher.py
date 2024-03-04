@@ -8,7 +8,8 @@ from loguru import logger
 
 from const import *
 from users import User,Login,TokenCheck,Register
-from middlewars import SysInit,Email,FileScan,InfoCompletion
+from app import Songs,Album,Artist
+from middlewars import SysInit,Email,FileScan,InfoCompletion,Keepalive
 from utils import YamlConfig
 from settings import Settings
 
@@ -26,16 +27,12 @@ class RequestParamsCheck:
         :param data:字典，json
         :return:返回bool,配置字典,用户信息字典
         """
-        if "using_db" not in data or "user" not in data:
+        if "user" not in data:
             return PARAMS_ERROR
         else:
             try:
                 sysinit = SysInit()
                 user_dict = data.get("user")
-                using_db_list = ["sqlite", "mysql"]
-                # 判断指定使用的的数据库是否允许
-                if data.get("using_db") not in using_db_list:
-                    return PARAMS_ERROR
                 # 判断用户信息字段是否匹配
                 key_list = ["user_name", "nick_name", "password", "email"]
                 for i in key_list:
@@ -46,32 +43,6 @@ class RequestParamsCheck:
             except Exception as e:
                 logger.error(e)
                 return PARAMS_ERROR
-            if data.get("using_db") == "sqlite":
-                if not path.exists(path.join(getcwd(), "db")):
-                    mkdir(path.join(getcwd(), "db"))
-            elif data.get("using_db") == "mysql":
-                try:
-                    db_fields = ["host", "port", "user", "password", "database"]
-                    for i in data.get("db").get("mysql"):
-                        if i not in db_fields:
-                            return PARAMS_ERROR
-                        elif data.get("db").get("mysql").get(i) is None or data.get("db").get("mysql").get(i) == "":
-                            return PARAMS_ERROR
-                except Exception as e:
-                    logger.error(e)
-                    return PARAMS_ERROR
-                try:
-                    con = Connect(host=data.get("db").get("mysql").get("host"),
-                                  port=int(data.get("db").get("mysql").get("port")),
-                                  user=data.get("db").get("mysql").get("user"),
-                                  password=data.get("db").get("mysql").get("password"),
-                                  database="mysql")
-                    with con.cursor() as cur:
-                        cur.execute("show tables")
-                    con.close()
-                except Exception as e:
-                    logger.error(ConnectionError("sys_init mysql Connect Error."))
-                    return MYSQL_ERROR
             # 初始化数据库表
             init_bool = sysinit.sys_init(data, user_dict)
             if init_bool:
@@ -82,11 +53,11 @@ class RequestParamsCheck:
     # 登陆操作
     def login_params(self,data:dict) -> Response:
         login_c = Login()
-        keys = ["user_name","password"]
+        keys = ["username","password"]
         for i in keys:
             if i not in data:
                 return PARAMS_ERROR
-        username = data.get("user_name")
+        username = data.get("username")
         password = data.get("password")
         res = login_c.login(username=username,password=password)
         return res
@@ -267,7 +238,18 @@ class RequestParamsCheck:
         if not admin:
             return PERMISSION_ERROR
         return FileScan().start_scan()
-    
+
+    # 返回扫描状态
+    def scan_status_params(self,token:str) -> Response:
+        expire,admin = self.tk_check.check_token(token=token)
+        if expire:
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
+        if not admin:
+            return PERMISSION_ERROR
+        return FileScan().get_scan_status()
+
     # 音乐信息刮削
     def completion_params(self,token:str) -> Response:
         expire,admin = self.tk_check.check_token(token=token)
@@ -278,3 +260,48 @@ class RequestParamsCheck:
         if not admin:
             return PERMISSION_ERROR
         return InfoCompletion().start_completion()
+
+    def songs_params(self,token:str,data:dict) -> Response:
+        expire,admin = self.tk_check.check_token(token=token)
+        if expire:
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
+        limit = data.get("limit")
+        offset = data.get("offset")
+        order = data.get("order")
+        sort = data.get("sort")
+        res = Songs().get_all_song(offset,limit,sort,order)
+        return res
+    
+    def album_params(self,token:str,data:dict) -> Response:
+        expire,admin = self.tk_check.check_token(token=token)
+        if expire:
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
+        limit = data.get("limit")
+        offset = data.get("offset")
+        order = data.get("order")
+        sort = data.get("sort")
+        res = Album().get_all_Album(offset,limit,sort,order)
+        print(res)
+        return res
+    
+    def artist_params(self,token:str,data:dict) -> Response:
+        expire,admin = self.tk_check.check_token(token=token)
+        if expire:
+            if type(expire) is bool:
+                return TOKEN_EXPIRE
+            return expire
+        limit = data.get("limit")
+        offset = data.get("offset")
+        order = data.get("order")
+        sort = data.get("sort")
+        res = Artist().get_all_artist(offset,limit,sort,order)
+        print(res)
+        return res
+        
+    # 系统心跳
+    def keepalive_params(self) -> Response:
+        return Keepalive().keepalive()

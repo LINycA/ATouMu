@@ -1,14 +1,13 @@
 from sqlite3 import connect
-from os import path
+import sqlite3.dump
+from os import path,getcwd
 from loguru import logger
 from traceback import format_exc
 from utils import YamlConfig
 
 class Sqlite_con:
     def __init__(self):
-        sqlite_conf = YamlConfig().sqlite_conf()
-        if sqlite_conf:
-            self.con = connect(path.join(sqlite_conf.get("path")))
+        self.con = connect(path.join(getcwd(),"db","ATouMu.db"))
 
     def sql2commit(self,sql:str):
         res = self.con.execute(sql)

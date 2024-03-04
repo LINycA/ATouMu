@@ -1,5 +1,6 @@
 from os import path,getcwd,listdir,mkdir
 import time
+from hashlib import md5
 from threading import Thread
 from traceback import format_exc
 from datetime import datetime
@@ -8,7 +9,7 @@ from mutagen import flac,mp3
 from shortuuid import uuid
 from loguru import logger
 
-from utils import Sqlite_con,MysqlCon,YamlConfig
+from utils import Sqlite_con,YamlConfig
 from const import *
 
 # 音乐文件扫描
@@ -33,22 +34,30 @@ class FileScan:
         media_path = yaml_conf.media_path_conf()
         lrc_root_path = path.join(getcwd(),"data","lrcs")
         album_img_root_path = path.join(getcwd(),"data","album_img")
-        using_db = yaml_conf.check_sys_usingdb()
-        if using_db == "sqlite":
-            sql_con = Sqlite_con()
-        elif using_db == "mysql":
-            sql_con = MysqlCon()
+        sql_con = Sqlite_con()
+        # 生成id
+        def get_media_id(file_path:str) -> str:
+            with open(file_path,"rb")as f:
+                mid = md5(f.read()).hexdigest()
+            return mid
         # mp3文件信息提取
         def mp3_info_extract(file_path:str):
-            size = round(path.getsize(file_path)/(1024**2),1)
+            size = path.getsize(file_path)
             info = mp3.MP3(file_path)
+            bitrate = info.info.bitrate // 1000
+            channels = info.info.channels
+            suffix = "mp3"
             duration = info.info.length
-            media_id = uuid(file_path)
+            media_id = get_media_id(file_path=file_path)
             title = str(info.get("TIT2"))
             artist = str(info.get("TPE1"))
+            artist_id = uuid(artist)
             lrc = str(info.get("USLT::eng"))
             album = str(info.get("TALB"))
+            album_id = uuid(album)
             jpeg = info.get("APIC:").__dict__.get("data")
+            if jpeg:
+                has_cover_art = True
             curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             lrc_path = ""
             if lrc is not None and album is not None:
@@ -60,19 +69,30 @@ class FileScan:
                 album_img_path = path.join(album_img_root_path,artist+"-"+album+".jpeg")
                 with open(album_img_path,"wb")as f:
                     f.write(jpeg)
+            full_text = " ".join([artist,album,title])
             try:
-                media_sql = f'insert or ignore into media(id,title,artist_name,album_name,media_path,lyric_path,image_path,size,duration,create_at,update_at) values("{media_id}","{title}","{artist}","{album}","{file_path}","{lrc_path}","{album_img_path}","{size}","{duration}","{curdate}","{curdate}");'
+                media_sql = f"""insert or ignore into media_file
+                (id,path,title,album,artist,artist_id,album_artist,has_cover_art,size,suffix,duration,bit_rate,created_at,updated_at,full_text,album_artist_id,order_album_name,
+                order_album_artist_name,order_artist_name,lyrics,channels,order_title) 
+                values
+                ("{media_id}","{file_path}","{title}","{album}","{artist}","{artist_id}","{album}","{has_cover_art}","{size}","{suffix}","{duration}",
+                "{bitrate}","{curdate}","{curdate}","{full_text}","{artist_id}","{album}","{artist}","{artist}","{lrc_path}","{channels}","{title}");"""
                 sql_con.sql2commit(media_sql)
             except:
                 logger.error(format_exc())
             try:
-                artist_sql = f"insert or ignore into artist(name) values(\"{artist}\");"
+                artist_sql = f"""insert or ignore into artist
+                (id,name,full_text,order_artist_name,external_info_updated_at) 
+                values("{artist_id}","{artist}","{artist}","{artist}","{curdate}");"""
                 sql_con.sql2commit(artist_sql)
             except:
                 logger.error(format_exc())
             if album is not None:
                 try:
-                    album_sql = f'insert or ignore into album(name,artist_name) values("{album}","{artist}");'
+                    album_sql = f"""insert or ignore into album
+                    (id,name,artist_id,embed_art_path,artist,album_artist,created_at,updated_at,full_text,album_artist_id,order_album_name,order_album_artist_name,all_artist_ids,external_info_updated_at) 
+                    values
+                    ("{album_id}","{album}","{artist_id}","{file_path}","{artist}","{artist}","{curdate}","{curdate}","{full_text}","{artist_id}","{album}","{artist}","{artist_id}","{curdate}");"""
                     sql_con.sql2commit(album_sql)
                 except:
                     logger.error(format_exc())
@@ -112,11 +132,13 @@ class FileScan:
                     file_type = file.split(".")[-1].lower()
                     if file_type == "mp3":
                         try:
+                            logger.success(file)
                             mp3_info_extract(file_path=file)
                         except:
                             logger.error(format_exc())
                     elif file_type == "flac":
                         try:
+                            logger.success(file)
                             flac_info_extract(file_path=file)
                         except:
                             logger.error(format_exc())
@@ -146,8 +168,29 @@ class FileScan:
         t = Thread(target=task_thread)
         t.setDaemon(True)
         t.start()
-
+    # 获取扫描状态，
+    def get_scan_status(self):
+        sql_con = Sqlite_con()
+        curtime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sql_media_count = "select count(1) from media;"
+        media_count = sql_con.sql2commit(sql_media_count)[0][0]
+        data = trans_res({
+            "subsonic-response":{
+                "status":"ok",
+                "version":"1.16.1",
+                "type":"ATouMu",
+                "serverVersion":"0.51.1 (6d253225)",
+                "openSubsonic":False,
+                "scanStatus":{
+                    "scanning":False,
+                    "count":media_count,
+                    "folderCount":1,
+                    "lastScan":curtime
+                }
+            }
+        })
+        return data
 
 if __name__ == "__main__":
     fs = FileScan()
-    fs.start_scan()
+    fs._scan()

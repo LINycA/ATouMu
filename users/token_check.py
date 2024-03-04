@@ -1,7 +1,6 @@
 import jwt
 import datetime
-from utils import Sqlite_con,MysqlCon,YamlConfig
-from middlewars import check_sys_init
+from utils import YamlConfig
 from const import *
 
 class TokenCheck:
@@ -36,6 +35,6 @@ class TokenCheck:
 
 if __name__ == "__main__":
     t = TokenCheck()
-    token = t.gen_token({"asdf":"123","admin":True,"expire":"2024-02-06 18:07:11"})
-    print(token)
-    print(t.check_token(token=token))
+    # token = t.gen_token({"asdf":"123","admin":True,"expire":"2024-02-06 18:07:11"})
+    # print(token)
+    print(t.check_token(token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiSzVjZ2FIY2NMdzRjN2RXZzdxRXpBVCIsIm5pY2tfbmFtZSI6ImFybm8iLCJhZG1pbiI6dHJ1ZSwiZXhwaXJlIjoiMjAyNC0wMy0wMiAxNTo0MDo1OSJ9.usE9IKoyPlBdMYkcq2FHe95anw1prwaZ2rPd7L0TXkI"))

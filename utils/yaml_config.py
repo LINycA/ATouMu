@@ -31,7 +31,7 @@ class YamlConfig:
 
     # sqlite数据库路径
     def sqlite_conf(self):
-        return self.load_yaml.get("db").get("sqlite")
+        return self.load_yaml.get("db")
 
     # 配置写入操作
     def safe_dump_conf(self,conf_dict):
