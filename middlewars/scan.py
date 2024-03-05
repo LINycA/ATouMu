@@ -35,41 +35,9 @@ class FileScan:
         lrc_root_path = path.join(getcwd(),"data","lrcs")
         album_img_root_path = path.join(getcwd(),"data","album_img")
         sql_con = Sqlite_con()
-        # 生成id
-        def get_media_id(file_path:str) -> str:
-            with open(file_path,"rb")as f:
-                mid = md5(f.read()).hexdigest()
-            return mid
-        # mp3文件信息提取
-        def mp3_info_extract(file_path:str):
-            size = path.getsize(file_path)
-            info = mp3.MP3(file_path)
-            bitrate = info.info.bitrate // 1000
-            channels = info.info.channels
-            suffix = "mp3"
-            duration = info.info.length
-            media_id = get_media_id(file_path=file_path)
-            title = str(info.get("TIT2"))
-            artist = str(info.get("TPE1"))
-            artist_id = uuid(artist)
-            lrc = str(info.get("USLT::eng"))
-            album = str(info.get("TALB"))
-            album_id = uuid(album)
-            jpeg = info.get("APIC:").__dict__.get("data")
-            if jpeg:
-                has_cover_art = True
-            curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            lrc_path = ""
-            if lrc is not None and album is not None:
-                lrc_path = path.join(lrc_root_path,media_id+".lrc")
-                with open(lrc_path,"w",encoding="utf-8")as f:
-                    f.write(lrc)
-            album_img_path = ""
-            if jpeg is not None and album is not None:
-                album_img_path = path.join(album_img_root_path,album_id+".jpeg")
-                with open(album_img_path,"wb")as f:
-                    f.write(jpeg)
-            full_text = " ".join([artist,album,title])
+
+        # 写入数据库
+        def insert2db(media_id:str,file_path:str,title:str,album:str,album_id:str,artist:str,artist_id:str,has_cover_art:bool,size:int,suffix:str,duration:float,bitrate:int,full_text:str,channels:int,lrc_path:str):
             try:
                 media_sql = f"""insert or ignore into media_file
                 (id,path,title,album,album_id,artist,artist_id,album_artist,has_cover_art,size,suffix,duration,bit_rate,created_at,updated_at,full_text,album_artist_id,order_album_name,
@@ -96,27 +64,65 @@ class FileScan:
                     sql_con.sql2commit(album_sql)
                 except:
                     logger.error(format_exc())
+
+        # 生成id
+        def get_media_id(file_path:str) -> str:
+            with open(file_path,"rb")as f:
+                mid = md5(f.read()).hexdigest()
+            return mid
+        
+        # mp3文件信息提取
+        def mp3_info_extract(file_path:str):
+            size = path.getsize(file_path)
+            info = mp3.MP3(file_path)
+            bitrate = info.info.bitrate // 1000
+            channels = info.info.channels
+            suffix = "mp3"
+            duration = info.info.length
+            media_id = get_media_id(file_path=file_path)
+            title = str(info.get("TIT2"))
+            artist = str(info.get("TPE1"))
+            artist_id = uuid(artist)
+            lrc = str(info.get("USLT::eng"))
+            album = str(info.get("TALB"))
+            album_id = uuid(album)
+            jpeg = info.get("APIC:").__dict__.get("data")
+            has_cover_art = False
+            if jpeg:
+                has_cover_art = True
+            curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            lrc_path = ""
+            if lrc is not None and album is not None:
+                lrc_path = path.join(lrc_root_path,media_id+".lrc")
+                with open(lrc_path,"w",encoding="utf-8")as f:
+                    f.write(lrc)
+            album_img_path = ""
+            if jpeg is not None and album is not None:
+                album_img_path = path.join(album_img_root_path,album_id+".jpeg")
+                with open(album_img_path,"wb")as f:
+                    f.write(jpeg)
+            full_text = " ".join([artist,album,title])
+            insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=artist,artist_id=artist_id,
+                      has_cover_art=has_cover_art,size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=full_text,channels=channels,lrc_path=lrc_path)
+            
         # flac文件信息提取
         def flac_info_extract(file_path:str):
-            size = round(path.getsize(file_path)/(1024**2),1)
+            suffix = "flac"
+            size = path.getsize(file_path)
             info = flac.FLAC(file_path)
+            bitrate = info.info.bitrate // 1000
+            channels = info.info.channels
             duration = info.info.length
-            media_id = uuid(file_path)
+            media_id = get_media_id(file_path=file_path)
             title = str(info.get("title")[0])
             album = str(info.get("album")[0])
-            curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            album_id = uuid(album)
+            has_cover_art = False
             if album is None:
                 logger.warning(file_path+"缺少专辑名称")
-            try:
-                media_sql = f'insert or ignore into media(id,title,album_name,media_path,size,duration,create_at,update_at) values("{media_id}","{title}","{album}","{file_path}","{size}","{duration}","{curdate}","{curdate}");'
-                sql_con.sql2commit(media_sql)
-            except:
-                logger.error(format_exc())
-            try:
-                album_sql = f'insert or ignore into album(name,artist_name) values("{album}","");'
-                sql_con.sql2commit(album_sql)
-            except:
-                logger.error(format_exc())
+            insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist="",artist_id="",has_cover_art=has_cover_art,
+                      size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text="",channels=channels,lrc_path="")
+            
         # 文件扫描
         try:
             file_list = [path.join(media_path,i) for i in listdir(media_path)]
