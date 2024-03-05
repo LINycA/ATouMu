@@ -73,10 +73,10 @@ class FileScan:
             try:
                 media_sql = f"""insert or ignore into media_file
                 (id,path,title,album,album_id,artist,artist_id,album_artist,has_cover_art,size,suffix,duration,bit_rate,created_at,updated_at,full_text,album_artist_id,order_album_name,
-                order_album_artist_name,order_artist_name,lyrics,channels,order_title) 
+                order_album_artist_name,order_artist_name,lyrics,channels,order_title,rg_album_gain,rg_album_peak,rg_track_gain,rg_track_peak) 
                 values
-                ("{media_id}","{file_path}","{title}","{album}","{album_id}","{artist}","{artist_id}","{artist}","{has_cover_art}","{size}","{suffix}","{duration}",
-                "{bitrate}","{curdate}","{curdate}","{full_text}","{artist_id}","{album}","{artist}","{artist}","{lrc_path}","{channels}","{title}");"""
+                ("{media_id}","{file_path}","{title}","{album}","{album_id}","{artist}","{artist_id}","{artist}",{has_cover_art},"{size}","{suffix}","{duration}",
+                {bitrate},"{curdate}","{curdate}","{full_text}","{artist_id}","{album}","{artist}","{artist}","{lrc_path}","{channels}","{title}",0,1,0,1);"""
                 sql_con.sql2commit(media_sql)
             except:
                 logger.error(format_exc())
@@ -178,9 +178,9 @@ class FileScan:
             "subsonic-response":{
                 "status":"ok",
                 "version":"1.16.1",
-                "type":"ATouMu",
-                "serverVersion":"0.51.1 (6d253225)",
-                "openSubsonic":False,
+                "type":"navidrome",
+                "serverVersion":"0.49.3 (8b93962f)",
+                "openSubsonic":True,
                 "scanStatus":{
                     "scanning":False,
                     "count":media_count,
