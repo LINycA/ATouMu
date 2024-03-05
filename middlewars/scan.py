@@ -90,7 +90,6 @@ class FileScan:
             has_cover_art = False
             if jpeg:
                 has_cover_art = True
-            curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             lrc_path = ""
             if lrc is not None and album is not None:
                 lrc_path = path.join(lrc_root_path,media_id+".lrc")
@@ -99,7 +98,10 @@ class FileScan:
             album_img_path = ""
             if jpeg is not None and album is not None:
                 album_img_path = path.join(album_img_root_path,album_id+".jpeg")
+                media_img_path = path.join(album_img_root_path,media_id+".jpeg")
                 with open(album_img_path,"wb")as f:
+                    f.write(jpeg)
+                with open(media_img_path,"wb")as f:
                     f.write(jpeg)
             full_text = " ".join([artist,album,title])
             insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=artist,artist_id=artist_id,

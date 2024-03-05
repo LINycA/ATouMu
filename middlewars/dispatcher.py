@@ -261,6 +261,30 @@ class RequestParamsCheck:
             return PERMISSION_ERROR
         return InfoCompletion().start_completion()
 
+    # 获取歌手高播放量的歌曲
+    def gettopsons_params(self,data:dict) -> Response:
+        username = data.get("username")
+        sub_token = data.get("sub_token")
+        sub_salt = data.get("sub_salt")
+        if not self.tk_check.subsonic_checktoken(sub_token=sub_token,salt=sub_salt,username=username):
+            return PERMISSION_ERROR
+        artist = data.get("artist")
+        count = data.get("count")
+        res = Songs().get_songs_by_artist(artist=artist,count=count)
+        return res
+
+    # 记录音乐播放次数
+    def scrobble_params(self,data:dict) -> Response:
+        username = data.get("username")
+        sub_token = data.get("sub_token")
+        sub_salt = data.get("sub_salt")
+        if not self.tk_check.subsonic_checktoken(sub_token=sub_token,salt=sub_salt,username=username):
+            return PERMISSION_ERROR
+        media_id = data.get("id")
+        f_time = data.get("time")
+        
+        
+
     # 获取媒体信息
     def songs_params(self,token:str,data:dict) -> Response:
         expire,admin = self.tk_check.check_token(token=token)
@@ -306,6 +330,11 @@ class RequestParamsCheck:
         
     # 获取专辑封面
     def cover_art_params(self,data:dict) -> Response:
+        username = data.get("username")
+        sub_token = data.get("sub_token")
+        sub_salt = data.get("sub_salt")
+        if not self.tk_check.subsonic_checktoken(sub_token=sub_token,salt=sub_salt,username=username):
+            return PERMISSION_ERROR
         id = data.get("id")
         with open(path.join(getcwd(),"data","album_img",id+".jpeg"),"rb")as f:
             img_byte = f.read()
@@ -313,6 +342,11 @@ class RequestParamsCheck:
 
     # 媒体流
     def media_stream_params(self,data:dict):
+        username = data.get("username")
+        sub_token = data.get("sub_token")
+        sub_salt = data.get("sub_salt")
+        if not self.tk_check.subsonic_checktoken(sub_token=sub_token,salt=sub_salt,username=username):
+            return PERMISSION_ERROR
         id = data.get("id")
         songs = Songs()
         res_dict = songs.get_song_path(id=id)

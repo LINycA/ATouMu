@@ -9,6 +9,7 @@ from utils import Sqlite_con
 from const import *
 
 class Songs:
+    # 从media_file表获取歌曲信息
     def get_all_song(self,page:int,limit:int,order_by:str,order:str) -> Response:
         if type(page) is not int or type(limit) is not int:
             return PARAMS_ERROR
@@ -96,6 +97,64 @@ class Songs:
         response.headers["permissions-policy"] = "autoplay=(), camera=(), microphone=(), usb=()"
         response.headers["x-content-type-options"] = "nosniff"
         return response
+
+    # 根据歌手获取歌曲信息
+    def get_songs_by_artist(self,count:int,artist:str) -> Response:
+        sql_con = Sqlite_con()
+        sql = f"""
+        select id,album_id,title,album,artist,size,suffix,duration,bit_rate,path,created_at,album_id,artist_id from media_file where artist="{artist}" limit {count};
+        """
+        res = sql_con.sql2commit(sql=sql)
+        res_dic = [{
+            "subsonic-response": {
+                "status": "ok",
+                "version": "1.16.1",
+                "type": "navidrome",
+                "serverVersion": "0.49.3 (8b93962f)",
+                "topSongs": {
+                    "song": [
+                        {
+                            "id": s[0],
+                            "parent": s[1],
+                            "isDir": False,
+                            "title": s[2],
+                            "album": s[3],
+                            "artist": s[4],
+                            "coverArt": s[0],
+                            "size": s[5],
+                            "contentType": "audio/mpeg",
+                            "suffix": s[6],
+                            "duration": s[7],
+                            "bitRate": s[8],
+                            "path": s[9],
+                            "created": s[10],
+                            "albumId": s[11],
+                            "artistId": s[12],
+                            "type": "music",
+                            "isVideo": False
+                        }
+                    ]
+                }
+            }
+        }for s in res]
+        return trans_res(res_dic)
+
+    # 获取相似歌曲
+    def get_similar_songs(self,count:int,media_id:str) -> Response:
+        sql = f"""
+        select 
+        """
+    
+    # 记录歌曲播放次数
+    def scrobble_songs(self,f_time:str,media_id:str,username:str) -> Response:
+        sql_con = Sqlite_con()
+        user_info_sql = f"""
+        select user_id from users where user_name="{username}";
+        """
+        userid = sql_con.sql2commit(user_info_sql)[0][0]
+        
+        update_sql = 
+        
 
     # 获取媒体文件路径
     def get_song_path(self,id:str) -> str:

@@ -130,32 +130,55 @@ def Scan():
         return TOKEN_ERROR
     res = dispatcher.scan_params(token=token)
     return res
-
-# 文件扫描状态
-@app.route("/rest/getScanStatus",methods=["GET","POST"])
-def ScanStatus():
-    try:
-        token = request.headers.get("X-Nd-Authorization").replace("Bearer ","")
-        res = dispatcher.scan_status_params(token=token)
-        res.headers["x-nd-authorization"] = token
-        return res
-    except:
-        logger.error(format_exc())
-        return PARAMS_ERROR
-
-# 获取封面
-@app.route("/rest/getCoverArt",methods=["GET"])
-def getCoverArt():
-    try:
-        data = {
-            "id":str(request.args.get("id"))
+# rest接口
+@app.route("/rest/<action>",methods=["GET","POST"])
+def ScanStatus(action):
+    data = {
+            "id":request.args.get("id"),
+            "username":request.args.get("u"),
+            "sub_token":request.args.get("t"),
+            "sub_salt":request.args.get("s")
         }
-        res = dispatcher.cover_art_params(data=data)
-        return res
+    try:
+        token = request.headers.get("X-Nd-Authorization")
+        # 不同的token方式
+        if token:
+            token = token.replace("Bearer ","")
+        # 文件扫描状态
+        if action == "getScanStatus":
+            res = dispatcher.scan_status_params(token=token)
+            return res
+        # 专辑封面
+        elif action == "getCoverArt":
+            res = dispatcher.cover_art_params(data=data)
+            return res
+        # 获取歌手播放量高的歌曲
+        elif action == "getTopSongs":
+            data.update({
+                "artist":request.args.get("artist"),
+                "count":request.args.get("count")
+            })
+            res = dispatcher.gettopsons_params(token=token,data=data)
+        # /rest/scrobble?id=28fa6c30f9a6905aa7a2e2fdfdb11a53&submission=true&time=1709630991856&u=arno&t=406da93d43afdf070b4a877e1a0dc698&s=3o0h8l&f=json&v=1.8.0&c=Stream+Music 
+        # 记录音乐播放次数
+        elif action == "scrobble":
+            data.update({
+                "time":request.args.get("time"),
+                "id":request.args.get("id")
+            })
+            res = dispatcher.scrobble_params(data=data)
+        # 媒体流
+        elif action == "stream":
+            res = dispatcher.media_stream_params(data=data)
+            res.headers["x-frame-options"] = "DENY"
+            res.headers["permissions-policy"] = "autoplay=(), camera=(), microphone=(), usb=()"
+            res.headers["x-content-type-options"] = "nosniff"
+            return res
+        logger.warning("action: "+action+"  找不到对应功能")
+        return PARAMS_ERROR
     except:
         logger.error(format_exc())
         return PARAMS_ERROR
-
 
 # 音乐信息刮削
 @app.get("/api/info_completion")
@@ -231,24 +254,8 @@ def Artist():
         logger.error(format_exc())
         return PARAMS_ERROR
 
-# 媒体接口，未完成
-@app.get("/rest/stream")
-@check_sys_init_wrap
-def get_musics():
-    try:
-        print(request.headers)
-        data = {
-            "id":request.args.get("id")
-        }
-        res = dispatcher.media_stream_params(data=data)
-        res.headers["x-frame-options"] = "DENY"
-        res.headers["permissions-policy"] = "autoplay=(), camera=(), microphone=(), usb=()"
-        res.headers["x-content-type-options"] = "nosniff"
-        return res
-    except:
-        logger.error(format_exc())
-        return PARAMS_ERROR
-    return 
+
+# /rest/getTopSongs?u=arno&t=1a3ef32a51e7ae37d54625adc87aa153&s=5ec2y2&f=json&v=1.8.0&c=Stream+Music&artist=&count=30
 
 
 if __name__ == '__main__':
