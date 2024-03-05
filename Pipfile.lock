@@ -101,29 +101,6 @@
             "index": "pip_conf_index_global",
             "version": "==1.47.0"
         },
-<<<<<<< HEAD
-        "packaging": {
-            "hashes": [
-                "sha256:8c491190033a9af7e1d931d0b5dacc2ef47509b34dd0de67ed209b5203fc88c7"
-            ],
-            "version": "==23.2"
-        },
-        "pipdeptree": {
-            "hashes": [
-                "sha256:0ce50f03a78f688a81265a107dc2fdb2a548d459aedc02824e792485ba884c1d",
-                "sha256:1237791977ef61602dc967b287167c1a6b058501afbc145a04e835c622355e6f"
-            ],
-            "index": "pip_conf_index_global",
-            "version": "==2.13.2"
-        },
-        "pycparser": {
-            "hashes": [
-                "sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9"
-            ],
-            "version": "==2.21"
-        },
-=======
->>>>>>> origin/fix
         "pyjwt": {
             "hashes": [
                 "sha256:57e28d156e3d5c10088e0c68abb90bfac3df82b40a71bd0daa20c65ccd5c23de",
