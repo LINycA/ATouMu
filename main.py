@@ -42,4 +42,4 @@ def get_musics():
 
 
 if __name__ == '__main__':
-    app.run(port=8981)
+    server = app.run("0.0.0.0",port=8981)
