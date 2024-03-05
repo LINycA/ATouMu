@@ -27,6 +27,7 @@ class Password:
             return False
         except Exception as e:
             logger.warning(e)
+            return False
 
 
 

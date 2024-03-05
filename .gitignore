@@ -2,3 +2,8 @@
 *.db*
 config.yaml
 *.mp3
+*.flac
+*vscode*
+*idea*
+data*
+*.log

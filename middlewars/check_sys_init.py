@@ -1,5 +1,4 @@
 from utils import YamlConfig
-from utils import trans_res
 import functools
 from const import *
 
@@ -20,7 +19,7 @@ def check_sys_init_wrap(func):
             res = func(*args,**kwargs)
             return res
         else:
-            return trans_res(SYSINIT_ERROR)
+            return SYSINIT_ERROR
     return check_wraps
 
 
