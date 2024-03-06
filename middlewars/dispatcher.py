@@ -282,7 +282,7 @@ class RequestParamsCheck:
             return PERMISSION_ERROR
         media_id = data.get("id")
         f_time = data.get("time")
-        
+        return Songs().scrobble_songs(f_time=f_time,media_id=media_id,username=username)
         
 
     # 获取媒体信息

@@ -4,6 +4,7 @@ from datetime import datetime
 
 from flask import Response
 from loguru import logger
+from shortuuid import uuid
 
 from utils import Sqlite_con
 from const import *
@@ -147,14 +148,59 @@ class Songs:
     
     # 记录歌曲播放次数
     def scrobble_songs(self,f_time:str,media_id:str,username:str) -> Response:
+        def timestamp2strftime(timestamp:str) -> str:
+            timestamp = float(timestamp)/1000
+            return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
         sql_con = Sqlite_con()
         user_info_sql = f"""
         select user_id from users where user_name="{username}";
         """
+        # annotation记录歌曲播放次数
+        def annotation_check_update(media_id:str,album_id:str,artist_id:str,userid:str,play_date:str) -> Response:
+            curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sql = f"""select 1 from annotation where item_id="{media_id}" and user_id="{userid}";"""
+            if not sql_con.sql2commit(sql=sql):
+                ann_id = uuid()
+                insert_mid_sql = f"""insert into annotation(ann_id,user_id,item_id,item_type,play_count,play_date) values("{ann_id}","{userid}","{media_id}","media_file",1,"{curdate}");"""
+                sql_con.sql2commit(insert_mid_sql)
+            else:
+                update_sql = f"""update annotation set play_count=play_count+1,play_date="{play_date}" where user_id="{userid}" and item_id="{media_id}";"""
+                sql_con.sql2commit(update_sql)
+            sql = f"""select 1 from annotation where item_id="{album_id}" and user_id="{userid}";"""
+            if not sql_con.sql2commit(sql=sql):
+                ann_id = uuid()
+                insert_albid_sql = f"""insert into annotation(ann_id,user_id,item_id,item_type,play_count,play_date) values("{ann_id}","{userid}","{album_id}","album",1,"{curdate}");"""
+                sql_con.sql2commit(insert_albid_sql)
+            else:
+                update_sql = f"""update annotation set play_count=play_count+1,play_date="{play_date}" where user_id="{userid}" and item_id="{album_id}";"""
+                sql_con.sql2commit(update_sql)
+            sql = f"""select 1 from annotation where item_id="{artist_id}" and user_id="{userid}";"""
+            if not sql_con.sql2commit(sql=sql):
+                ann_id = uuid()
+                insert_artid_sql = f"""insert into annotation(ann_id,user_id,item_id,item_type,play_count,play_date) values("{ann_id}","{userid}","{artist_id}","artist",1,"{curdate}");"""
+                sql_con.sql2commit(insert_artid_sql)
+            else:
+                print("play_count+1")
+                update_sql = f"""update annotation set play_count=play_count+1,play_date="{play_date}" where user_id="{userid}" and item_id="{artist_id}";"""
+                sql_con.sql2commit(update_sql)
+            res = {
+                "subsonic-response": {
+                    "status": "ok",
+                    "version": "1.16.1",
+                    "type": "navidrome",
+                    "serverVersion": "0.49.3 (8b93962f)"
+                }
+            }
+            return trans_res(res) 
+        media_info_sql = f"select album_id,artist_id from media_file where id=\"{media_id}\";"
         userid = sql_con.sql2commit(user_info_sql)[0][0]
-        
-        update_sql = 
-        
+        album_id,artist_id = sql_con.sql2commit(media_info_sql)[0]
+        play_date = timestamp2strftime(f_time)
+        try:
+            return annotation_check_update(media_id=media_id,album_id=album_id,artist_id=artist_id,userid=userid,play_date=play_date)
+        except:
+            logger.error(format_exc())
+            return PARAMS_ERROR
 
     # 获取媒体文件路径
     def get_song_path(self,id:str) -> str:

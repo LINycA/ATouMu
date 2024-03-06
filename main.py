@@ -159,14 +159,13 @@ def ScanStatus(action):
                 "count":request.args.get("count")
             })
             res = dispatcher.gettopsons_params(token=token,data=data)
-        # /rest/scrobble?id=28fa6c30f9a6905aa7a2e2fdfdb11a53&submission=true&time=1709630991856&u=arno&t=406da93d43afdf070b4a877e1a0dc698&s=3o0h8l&f=json&v=1.8.0&c=Stream+Music 
-        # 记录音乐播放次数
         elif action == "scrobble":
             data.update({
                 "time":request.args.get("time"),
                 "id":request.args.get("id")
             })
             res = dispatcher.scrobble_params(data=data)
+            return res
         # 媒体流
         elif action == "stream":
             res = dispatcher.media_stream_params(data=data)
