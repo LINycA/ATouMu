@@ -24,10 +24,12 @@ class FileScan:
             mkdir(path.join(getcwd(),"data","lrcs"))
         if "log" not in dir_list:
             mkdir(path.join(getcwd(),"log"))
+        self.unkown_artist = "unkown"
+        self.unkown_artist_id = uuid(self.unkown_artist)
     # 文件扫描
     def _scan(self):
         self._dir_init()
-        curdate = datetime.now().strftime("%Y-%m-%d")
+        curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         logger.add(path.join(getcwd(),"log",f"file_scan_{curdate}.log"))
         logger.info("扫描开始")
         yaml_conf = YamlConfig()
@@ -83,6 +85,9 @@ class FileScan:
             title = str(info.get("TIT2"))
             artist = str(info.get("TPE1"))
             artist_id = uuid(artist)
+            if not artist:
+                artist = self.unkown_artist
+                artist_id = self.unkown_artist_id
             lrc = str(info.get("USLT::eng"))
             album = str(info.get("TALB"))
             album_id = uuid(album)
@@ -122,8 +127,8 @@ class FileScan:
             has_cover_art = False
             if album is None:
                 logger.warning(file_path+"缺少专辑名称")
-            insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist="",artist_id="",has_cover_art=has_cover_art,
-                      size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text="",channels=channels,lrc_path="")
+            insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=self.unkown_artist,artist_id=self.unkown_artist_id,has_cover_art=has_cover_art,
+                      size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=self.unkown_artist,channels=channels,lrc_path="")
             
         # 文件扫描
         try:

@@ -1,4 +1,4 @@
-from traceback import format_exc
+from datetime import datetime
 
 from flask import Response
 from loguru import logger
@@ -8,35 +8,45 @@ from const import *
 
 
 class Artist:
-    def get_all_artist(self,page:int,limit:int,order_by:str,order:str) -> Response:
+    def get_all_artist(self,user_id:str,page:int,limit:int,order_by:str,order:str) -> Response:
         if type(page) is not int or type(limit) is not int:
             return PARAMS_ERROR
-        # order_by_keys = ["id","title","artist_name","genre_id"]
-        # if order_by not in order_by_keys:
-            # return PARAMS_ERROR
         order_keys = ["ASC","DESC"]
         if order not in order_keys:
             return PARAMS_ERROR
         sql_con = Sqlite_con()
-        sql = f'select album_count,external_info_updated_at,full_text,id,name,order_artist_name,song_count from artist {order} limit {page},{limit};'
+        sql = f'select album_count,external_info_updated_at,full_text,id,name,order_artist_name,size,song_count from artist;'
+        curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         res = sql_con.sql2commit(sql=sql)
-        print(res)
         res_dic = [{
-            "albumCount": s[0],
-            "externalInfoUpdatedAt": s[1],
-            "fullText": s[2],
-            "genres": "",
-            "id": s[3],
-            "name": s[4],
-            "orderArtistName": s[5],
-            "playCount": 1,
-            "playDate": "2024-03-04T05:00:39Z",
-            "rating": 0,
-            "size": 81752024,
-            "songCount": s[6],
-            "starred": False,
-            "starredAt": "0001-01-01T00:00:00Z"
-        } for s in res]
+                "albumCount": ar[0],
+                "externalInfoUpdatedAt": ar[1],
+                "fullText": ar[2],
+                "genres": None,
+                "id": ar[3],
+                "name": ar[4],
+                "orderArtistName": ar[5],
+                "playCount": 0,
+                "playDate": curdate,
+                "rating": 0,
+                "size": ar[6],
+                "songCount": ar[7],
+                "starred": False,
+                "starredAt": curdate
+            } for ar in res]
+        for ar in res_dic:
+            arid = ar.get("id")
+            ann_sql = f"""select play_count,rating,starred,starred_at from annotation where user_id="{user_id}" and item_id="{arid}";"""
+            ann_res = sql_con.sql2commit(ann_sql)
+            print(ann_res)
+            if ann_res:
+                ann_res = ann_res[0]
+                ar.update({
+                    "playCount":ann_res[0],
+                    "rating":int(ann_res[1]),
+                    "starred":bool(ann_res[2]),
+                    "starredAt":ann_res[3]
+                })
         total_sql = "select count(1) from artist;"
         total_res = sql_con.sql2commit(total_sql)[0][0]
         response = trans_res(res_dic)
