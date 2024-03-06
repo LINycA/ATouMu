@@ -212,6 +212,15 @@ def Api(action):
             except:
                 logger.error(format_exc())
                 return PARAMS_ERROR
+        # 歌单接口
+        elif action == "playlist":
+            try:
+                postdata = json.loads(request.data)
+                data.update(postdata)
+                res = dispatcher
+            except:
+                logger.error(format_exc())
+                return PARAMS_ERROR
         logger.warning("action:  "+action+"  未找到功能")
         return PARAMS_ERROR
     except:
