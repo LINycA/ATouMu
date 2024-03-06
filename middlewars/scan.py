@@ -29,7 +29,7 @@ class FileScan:
     # 文件扫描
     def _scan(self):
         self._dir_init()
-        curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        curdate = datetime.now().strftime("%Y-%m-%d")
         logger.add(path.join(getcwd(),"log",f"file_scan_{curdate}.log"))
         logger.info("扫描开始")
         yaml_conf = YamlConfig()
@@ -40,6 +40,7 @@ class FileScan:
 
         # 写入数据库
         def insert2db(media_id:str,file_path:str,title:str,album:str,album_id:str,artist:str,artist_id:str,has_cover_art:bool,size:int,suffix:str,duration:float,bitrate:int,full_text:str,channels:int,lrc_path:str):
+            curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             try:
                 media_sql = f"""insert or ignore into media_file
                 (id,path,title,album,album_id,artist,artist_id,album_artist,has_cover_art,size,suffix,duration,bit_rate,created_at,updated_at,full_text,album_artist_id,order_album_name,
@@ -91,7 +92,10 @@ class FileScan:
             lrc = str(info.get("USLT::eng"))
             album = str(info.get("TALB"))
             album_id = uuid(album)
-            jpeg = info.get("APIC:").__dict__.get("data")
+            try:
+                jpeg = info.get("APIC:").__dict__.get("data")
+            except:
+                jpeg = None
             has_cover_art = False
             if jpeg:
                 has_cover_art = True

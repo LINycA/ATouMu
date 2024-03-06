@@ -14,9 +14,10 @@ class Songs:
     def get_all_song(self,page:int,limit:int,order_by:str,order:str) -> Response:
         if type(page) is not int or type(limit) is not int:
             return PARAMS_ERROR
-        order_by_keys = ["id","title","artist_name","genre_id"]
+        order_by_keys = {"id":"id","title":"title","createdAt":"created_at","genre":"genre"}
         if order_by not in order_by_keys:
             return PARAMS_ERROR
+        order_by = order_by_keys[order_by]
         order_keys = ["ASC","DESC"]
         if order not in order_keys:
             return PARAMS_ERROR
@@ -280,7 +281,7 @@ class Songs:
         album,album_artist,album_artist_id,album_id,artist,
         artist_id,bit_rate,channels,compilation,created_at,
         disc_number,duration,full_text,genre,has_cover_art,
-        id,lyric_path,order_album_artist_name,order_album_name,order_artist_name,
+        id,lyrics,order_album_artist_name,order_album_name,order_artist_name,
         order_title,path,rg_album_gain,rg_album_peak,rg_track_gain,
         rg_track_peak,size,suffix,title,track_number,
         updated_at,year
@@ -288,7 +289,6 @@ class Songs:
         """
         lrc = None
         song_res = sql_con.sql2commit(sql=sql)[0]
-        print(song_res[14:18])
         if path.exists(song_res[15]):
             with open(song_res[15],"r",encoding="utf-8")as f:
                 lrc = f.read()

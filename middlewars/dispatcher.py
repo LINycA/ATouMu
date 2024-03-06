@@ -3,7 +3,7 @@ from functools import wraps
 import re
 from traceback import format_exc
 
-from flask import Response,send_file
+from flask import Response,send_file,make_response
 from pymysql import Connect
 from loguru import logger
 
@@ -337,9 +337,14 @@ class RequestParamsCheck:
     @subsonic_token_check_wrap
     def cover_art_params(self,data:dict) -> Response:
         id = data.get("id")
-        with open(path.join(getcwd(),"data","album_img",id+".jpeg"),"rb")as f:
+        img_path = path.join(getcwd(),"data","album_img",id+".jpeg")
+        if not path.exists(img_path):
+            img_path = path.join(getcwd(),"data","album_img","tl.jpeg")
+        with open(img_path,"rb")as f:
             img_byte = f.read()
-        return img_byte
+        response = make_response(img_byte)
+        response.headers["Content-Type"] = "image/jpeg"
+        return response
 
     # 获取单一歌曲文件详细信息
     @request_token_check_wrap
