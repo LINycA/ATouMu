@@ -116,6 +116,7 @@ def Rest(action):
         logger.error(format_exc())
         return PARAMS_ERROR
 
+# 获取歌曲详细信息
 @app.route("/api/song/<action>")
 @check_sys_init_wrap
 def api_song(action):
@@ -214,13 +215,18 @@ def Api(action):
                 return PARAMS_ERROR
         # 歌单接口
         elif action == "playlist":
-            try:
-                postdata = json.loads(request.data)
-                data.update(postdata)
-                res = dispatcher
-            except:
-                logger.error(format_exc())
-                return PARAMS_ERROR
+            method = request.method
+            data.update({"method":method})
+            if method == "POST":
+                try:
+                    postdata = json.loads(request.data)
+                    data.update(postdata)
+                    print(data)
+                    res = dispatcher.playlist_params(data=data)
+                except:
+                    logger.error(format_exc())
+                    return PARAMS_ERROR
+
         logger.warning("action:  "+action+"  未找到功能")
         return PARAMS_ERROR
     except:

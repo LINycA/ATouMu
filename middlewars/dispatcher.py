@@ -3,7 +3,7 @@ from functools import wraps
 import re
 from traceback import format_exc
 
-from flask import Response,send_file,make_response
+from flask import Response,send_file
 from pymysql import Connect
 from loguru import logger
 
@@ -97,6 +97,62 @@ class RequestParamsCheck:
         res = login_c.login(username=username,password=password)
         return res
 
+        # 验证码请求
+    
+    # 验证码操作
+    def verifycode_params(self,data: dict) -> Response:
+        yaml_conf = YamlConfig()
+        settings_conf = yaml_conf.settings_conf()
+        if not settings_conf.get("registe_allow"):
+            return REGIST_UNALLOW
+        action = data.get("action")
+        email = data.get("email")
+        self.user = User()
+        if not re.match(r"^[0-9a-zA-Z._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$",email):
+            return PARAMS_ERROR        
+        # 用户注册获取验证码
+        if action == "regist_get_code":
+            if self.user.check_user_exists(email=email):
+                return USER_EXISTS
+            nickname = data.get("nick_name")
+            if nickname is None or nickname == "":
+                return PARAMS_ERROR
+            if res := self.email.send_email(send_to=email,nickname=nickname):
+                return res
+        # 用户找回密码获取验证码
+        elif action == "forget_password_get_code":
+            if not self.user.check_user_exists(email=email):
+                return USER_UNEXISTS
+            else:
+                nickname = self.user.user_nickname(email=email)
+            if res := self.email.send_email(send_to=email,nickname=nickname):
+                return res
+        return PARAMS_ERROR
+
+    # 注册操作
+    def register_params(self,data: dict) -> Response:
+        settings_conf = self.yaml_conf.settings_conf()
+        keys = ["user_name","nick_name","password","email","phone","gender"]
+        if not settings_conf.get("registe_allow"):
+            return REGIST_UNALLOW
+        if registe_auth := settings_conf.get("registe_auth"):
+            keys.append("code")
+        for key in keys:
+            if key not in data:
+                return PARAMS_ERROR
+        if registe_auth:
+            email = data.get("email")
+            code = data.get("code")
+            verify_res = self.email.verify_code.match_code(email=email,code_=code)
+            if not verify_res:
+                return VERIFY_CODE_FAILED
+        register = Register()
+
+        res = register.register(username=data.get("user_name"),nick_name=data.get("nick_name"),
+                          password=data.get("password"),email=data.get("email"),
+                          phone=data.get("phone"),gender=data.get("gender"))
+        return res
+
     # 用户操作分发
     @request_token_check_wrap
     def user_params(self, data: dict) -> Response:
@@ -168,60 +224,6 @@ class RequestParamsCheck:
                 res = user.user_detail(user_info_dict.get("user_id"))
                 return res
             return PERMISSION_ERROR
-
-    # 验证码请求
-    def verifycode_params(self,data: dict) -> Response:
-        yaml_conf = YamlConfig()
-        settings_conf = yaml_conf.settings_conf()
-        if not settings_conf.get("registe_allow"):
-            return REGIST_UNALLOW
-        action = data.get("action")
-        email = data.get("email")
-        self.user = User()
-        if not re.match(r"^[0-9a-zA-Z._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$",email):
-            return PARAMS_ERROR        
-        # 用户注册获取验证码
-        if action == "regist_get_code":
-            if self.user.check_user_exists(email=email):
-                return USER_EXISTS
-            nickname = data.get("nick_name")
-            if nickname is None or nickname == "":
-                return PARAMS_ERROR
-            if res := self.email.send_email(send_to=email,nickname=nickname):
-                return res
-        # 用户找回密码获取验证码
-        elif action == "forget_password_get_code":
-            if not self.user.check_user_exists(email=email):
-                return USER_UNEXISTS
-            else:
-                nickname = self.user.user_nickname(email=email)
-            if res := self.email.send_email(send_to=email,nickname=nickname):
-                return res
-        return PARAMS_ERROR
-
-    # 注册操作
-    def register_params(self,data: dict) -> Response:
-        settings_conf = self.yaml_conf.settings_conf()
-        keys = ["user_name","nick_name","password","email","phone","gender"]
-        if not settings_conf.get("registe_allow"):
-            return REGIST_UNALLOW
-        if registe_auth := settings_conf.get("registe_auth"):
-            keys.append("code")
-        for key in keys:
-            if key not in data:
-                return PARAMS_ERROR
-        if registe_auth:
-            email = data.get("email")
-            code = data.get("code")
-            verify_res = self.email.verify_code.match_code(email=email,code_=code)
-            if not verify_res:
-                return VERIFY_CODE_FAILED
-        register = Register()
-
-        res = register.register(username=data.get("user_name"),nick_name=data.get("nick_name"),
-                          password=data.get("password"),email=data.get("email"),
-                          phone=data.get("phone"),gender=data.get("gender"))
-        return res
 
     # 系统设置
     @request_token_check_wrap
@@ -306,6 +308,13 @@ class RequestParamsCheck:
         res = Artist().get_all_artist(user_id,offset,limit,sort,order)
         return res
 
+    # 歌单
+    @request_token_check_wrap
+    def playlist_params(self,data:dict) -> Response:
+        method = data.get("method")
+        if method == "POST":
+            
+
     # 获取相似歌曲
     @subsonic_token_check_wrap
     def getsimilarsongs_params(self,data:dict) -> Response:
@@ -342,9 +351,7 @@ class RequestParamsCheck:
             img_path = path.join(getcwd(),"data","album_img","tl.jpeg")
         with open(img_path,"rb")as f:
             img_byte = f.read()
-        response = make_response(img_byte)
-        response.headers["Content-Type"] = "image/jpeg"
-        return response
+        return img_byte
 
     # 获取单一歌曲文件详细信息
     @request_token_check_wrap

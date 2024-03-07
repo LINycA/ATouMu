@@ -107,7 +107,7 @@ class InfoCompletion:
         logger.info("信息收集开始")
         try:
             sql_con = Sqlite_con()
-            get_lack_info_sql = 'select id,title,album_name from media where artist_name = "" or lyric_path = "" or image_path = "";'
+            get_lack_info_sql = 'select id,title,album_name from media_file where artist_name = "" or lyrics = "" or image_path = "";'
             res = sql_con.sql2commit(get_lack_info_sql)
             need_completion_info_list = []
             for i in res:
