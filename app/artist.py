@@ -8,14 +8,17 @@ from const import *
 
 
 class Artist:
-    def get_all_artist(self,user_id:str,page:int,limit:int,order_by:str,order:str) -> Response:
+    def get_all_artist(self,user_id:str,page:int,limit:int,order_by:str,order:str,name:str) -> Response:
         if type(page) is not int or type(limit) is not int:
             return PARAMS_ERROR
         order_keys = ["ASC","DESC"]
         if order not in order_keys:
             return PARAMS_ERROR
         sql_con = Sqlite_con()
-        sql = f'select album_count,external_info_updated_at,full_text,id,name,order_artist_name,size,song_count from artist;'
+        filter_name = ""
+        if name:
+            filter_name = f"""where name like "%{name}%" """
+        sql = f'select album_count,external_info_updated_at,full_text,id,name,order_artist_name,size,song_count from artist {filter_name} order by {order_by};'
         curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         res = sql_con.sql2commit(sql=sql)
         res_dic = [{

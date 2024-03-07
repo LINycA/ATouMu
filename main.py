@@ -153,6 +153,7 @@ def Api(action):
                 "offset":int(request.args.get("_start")),
                 "sort":request.args.get("_sort"),
                 "order":request.args.get("_order"),
+                "name":request.args.get("name")
             })
             res = dispatcher.artist_params(data=data)
             return res
@@ -163,6 +164,7 @@ def Api(action):
                         "offset":int(request.args.get("_start")),
                         "sort":request.args.get("_sort"),
                         "order":request.args.get("_order"),
+                        "name":request.args.get("name")
                     })
             res = dispatcher.album_params(data=data)
             return res
@@ -173,6 +175,7 @@ def Api(action):
                 "offset":int(request.args.get("_start")),
                 "sort":request.args.get("_sort"),
                 "order":request.args.get("_order"),
+                "title":request.args.get("title")
             })
             res = dispatcher.songs_params(data=data)
             return res

@@ -16,13 +16,17 @@ from const import *
 class FileScan:
     # 检测文件夹是否存在，不存在则创建
     def _dir_init(self):
-        dir_list = listdir(getcwd())
-        if "data" not in dir_list:
-            mkdir(path.join(getcwd(),"data"))
+        data_path = path.join(getcwd(),"data")
+        if not path.exists(data_path):
+            mkdir(data_path)
+        dir_list = listdir(data_path)
+        if "album_img" not in dir_list:
             mkdir(path.join(getcwd(),"data","album_img"))
+        if "artist_img" not in dir_list:
             mkdir(path.join(getcwd(),"data","artist_img"))
+        if "lrcs" not in dir_list:
             mkdir(path.join(getcwd(),"data","lrcs"))
-        if "log" not in dir_list:
+        if not path.exists(path.join(getcwd(),"log")):
             mkdir(path.join(getcwd(),"log"))
         self.unkown_artist = "unkown"
         self.unkown_artist_id = uuid(self.unkown_artist)

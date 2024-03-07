@@ -3,7 +3,7 @@ from functools import wraps
 import re
 from traceback import format_exc
 
-from flask import Response,send_file
+from flask import Response,send_file,make_response
 from loguru import logger
 
 from const import *
@@ -283,7 +283,8 @@ class RequestParamsCheck:
         offset = int(data.get("offset"))
         order = data.get("order")
         sort = data.get("sort")
-        res = Songs().get_all_song(offset,limit,sort,order)
+        title = data.get("title")
+        res = Songs().get_all_song(offset,limit,sort,order,title)
         return res
     
     # 获取专辑信息
@@ -293,7 +294,8 @@ class RequestParamsCheck:
         offset = int(data.get("offset"))
         order = data.get("order")
         sort = data.get("sort")
-        res = Album().get_all_Album(offset,limit,sort,order)
+        name = data.get("name")
+        res = Album().get_all_Album(offset,limit,sort,order,name)
         return res
     
     # 获取艺术家信息
@@ -304,7 +306,8 @@ class RequestParamsCheck:
         order = data.get("order")
         sort = data.get("sort")
         user_id = data.get("user_id")
-        res = Artist().get_all_artist(user_id,offset,limit,sort,order)
+        name = data.get("name")
+        res = Artist().get_all_artist(user_id,offset,limit,sort,order,name)
         return res
 
     # 歌单
@@ -321,6 +324,8 @@ class RequestParamsCheck:
             return res
         elif method == "GET":
             print(data)
+        else:
+            return PARAMS_ERROR
 
     # 获取相似歌曲
     @subsonic_token_check_wrap
@@ -358,7 +363,9 @@ class RequestParamsCheck:
             img_path = path.join(getcwd(),"data","album_img","tl.jpeg")
         with open(img_path,"rb")as f:
             img_byte = f.read()
-        return img_byte
+        response = make_response(img_byte)
+        response.headers["Content-Type"] = "image/jpeg"
+        return response
 
     # 获取单一歌曲文件详细信息
     @request_token_check_wrap

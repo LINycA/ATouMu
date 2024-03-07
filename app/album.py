@@ -8,19 +8,21 @@ from const import *
 
 
 class Album:
-    def get_all_Album(self,page:int,limit:int,order_by:str,order:str) -> Response:
+    def get_all_Album(self,page:int,limit:int,order_by:str,order:str,name:str) -> Response:
         if type(page) is not int or type(limit) is not int:
             return PARAMS_ERROR
-        # order_by_keys = ["id","title","artist_name","genre_id"]
-        # if order_by not in order_by_keys:
-            # return PARAMS_ERROR
+        if order_by == "recently_added":
+            order_by = "created_at"
+        filter_name = ""
+        if name:
+            filter_name = f"""where name like "%{name}%" """
         order_keys = ["ASC","DESC"]
         if order not in order_keys:
             return PARAMS_ERROR
         sql_con = Sqlite_con()
         sql = f"""select 
         album_artist,album_artist_id,all_artist_ids,artist,artist_id,compilation,created_at,duration,embed_art_path,
-        external_info_updated_at,full_text,genre,id,max_year,min_year,name,order_album_artist_name,order_album_name,size,song_count,updated_at from album {order} limit {page},{limit};"""
+        external_info_updated_at,full_text,genre,id,max_year,min_year,name,order_album_artist_name,order_album_name,size,song_count,updated_at from album {filter_name} order by {order_by} {order} limit {page},{limit};"""
         res = sql_con.sql2commit(sql=sql)
         res_dic = [{
             "albumArtist": s[0],

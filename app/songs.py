@@ -11,7 +11,7 @@ from const import *
 
 class Songs:
     # 从media_file表获取歌曲信息
-    def get_all_song(self,page:int,limit:int,order_by:str,order:str) -> Response:
+    def get_all_song(self,page:int,limit:int,order_by:str,order:str,title:str) -> Response:
         if type(page) is not int or type(limit) is not int:
             return PARAMS_ERROR
         order_by_keys = {"id":"id","title":"title","createdAt":"created_at","genre":"genre"}
@@ -21,6 +21,9 @@ class Songs:
         order_keys = ["ASC","DESC"]
         if order not in order_keys:
             return PARAMS_ERROR
+        filter_title = ""
+        if title:
+            filter_title = f"""where title like "%{title}%" """
         sql_con = Sqlite_con()
         media_file_sql = f"""select 
          album,album_artist,album_artist_id,album_id,artist,
@@ -29,7 +32,7 @@ class Songs:
          id,order_album_artist_name,order_album_name,order_artist_name,order_title,
          path,rg_album_gain,rg_album_peak,rg_track_gain,rg_track_peak,
          size,suffix,title,track_number,updated_at,
-         year from media_file order by {order_by} {order} limit {page},{limit};"""
+         year from media_file {filter_title} order by {order_by} {order} limit {page},{limit};"""
         media_file_res = sql_con.sql2commit(sql=media_file_sql)
         curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         res_dic = [{
