@@ -1,24 +1,59 @@
-from os import path, getcwd, mkdir
+from os import path, getcwd
+from functools import wraps
 import re
 from traceback import format_exc
 
-from flask import Response
-from pymysql import Connect
+from flask import Response,send_file,make_response
 from loguru import logger
 
 from const import *
 from users import User,Login,TokenCheck,Register
-from middlewars import SysInit,Email,FileScan,InfoCompletion
+from app import Songs,Album,Artist,Playlist
+from middlewars import SysInit,Email,FileScan,InfoCompletion,Keepalive
 from utils import YamlConfig
 from settings import Settings
 
 
 class RequestParamsCheck:
     def __init__(self):
-        self.tk_check = TokenCheck()
         self.email = Email()
-        FileScan().regular_time_scan() # 定时扫描文件变化
+        file_scan = FileScan()
+        file_scan.start_scan()  # 后端启动就开始扫描文件
+        file_scan.regular_time_scan() # 定时扫描文件变化
         InfoCompletion().regular_start_completion() # 定时刮削音乐信息，定时暂不可修改
+
+    # subsonic口令验证装饰器
+    def subsonic_token_check_wrap(func):
+        @wraps(func)
+        def wrap(*args,**kwargs):
+            tk_check = TokenCheck()
+            data = kwargs.get("data")
+            username = data.get("username")
+            sub_token = data.get("sub_token")
+            sub_salt = data.get("sub_salt")
+            if not tk_check.subsonic_checktoken(sub_token=sub_token,salt=sub_salt,username=username):
+                return PERMISSION_ERROR
+            return func(*args,**kwargs)
+        return wrap
+
+    # 浏览器token检测装饰器
+    def request_token_check_wrap(func):
+        @wraps(func)    
+        def wrap(*wargs,**kwargs):
+            tk_check = TokenCheck()
+            token = kwargs.get("data").get("token")
+            if not token:
+                return TOKEN_ERROR
+            expire,admin,user_id = tk_check.check_token(token=token)
+            if expire:
+                if type(expire) is bool:
+                    return TOKEN_EXPIRE
+                return expire
+            kwargs["data"]["admin"] = admin
+            kwargs["data"]["user_id"] = user_id
+            return func(*wargs,**kwargs)
+        return wrap
+
     # 数据库初始化操作
     def sys_init_params(self, data: dict) -> Response:
         """
@@ -26,16 +61,12 @@ class RequestParamsCheck:
         :param data:字典，json
         :return:返回bool,配置字典,用户信息字典
         """
-        if "using_db" not in data or "user" not in data:
+        if "user" not in data:
             return PARAMS_ERROR
         else:
             try:
                 sysinit = SysInit()
                 user_dict = data.get("user")
-                using_db_list = ["sqlite", "mysql"]
-                # 判断指定使用的的数据库是否允许
-                if data.get("using_db") not in using_db_list:
-                    return PARAMS_ERROR
                 # 判断用户信息字段是否匹配
                 key_list = ["user_name", "nick_name", "password", "email"]
                 for i in key_list:
@@ -46,32 +77,6 @@ class RequestParamsCheck:
             except Exception as e:
                 logger.error(e)
                 return PARAMS_ERROR
-            if data.get("using_db") == "sqlite":
-                if not path.exists(path.join(getcwd(), "db")):
-                    mkdir(path.join(getcwd(), "db"))
-            elif data.get("using_db") == "mysql":
-                try:
-                    db_fields = ["host", "port", "user", "password", "database"]
-                    for i in data.get("db").get("mysql"):
-                        if i not in db_fields:
-                            return PARAMS_ERROR
-                        elif data.get("db").get("mysql").get(i) is None or data.get("db").get("mysql").get(i) == "":
-                            return PARAMS_ERROR
-                except Exception as e:
-                    logger.error(e)
-                    return PARAMS_ERROR
-                try:
-                    con = Connect(host=data.get("db").get("mysql").get("host"),
-                                  port=int(data.get("db").get("mysql").get("port")),
-                                  user=data.get("db").get("mysql").get("user"),
-                                  password=data.get("db").get("mysql").get("password"),
-                                  database="mysql")
-                    with con.cursor() as cur:
-                        cur.execute("show tables")
-                    con.close()
-                except Exception as e:
-                    logger.error(ConnectionError("sys_init mysql Connect Error."))
-                    return MYSQL_ERROR
             # 初始化数据库表
             init_bool = sysinit.sys_init(data, user_dict)
             if init_bool:
@@ -82,26 +87,79 @@ class RequestParamsCheck:
     # 登陆操作
     def login_params(self,data:dict) -> Response:
         login_c = Login()
-        keys = ["user_name","password"]
+        keys = ["username","password"]
         for i in keys:
             if i not in data:
                 return PARAMS_ERROR
-        username = data.get("user_name")
+        username = data.get("username")
         password = data.get("password")
         res = login_c.login(username=username,password=password)
         return res
 
+        # 验证码请求
+    
+    # 验证码操作
+    def verifycode_params(self,data: dict) -> Response:
+        yaml_conf = YamlConfig()
+        settings_conf = yaml_conf.settings_conf()
+        if not settings_conf.get("registe_allow"):
+            return REGIST_UNALLOW
+        action = data.get("action")
+        email = data.get("email")
+        self.user = User()
+        if not re.match(r"^[0-9a-zA-Z._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$",email):
+            return PARAMS_ERROR        
+        # 用户注册获取验证码
+        if action == "regist_get_code":
+            if self.user.check_user_exists(email=email):
+                return USER_EXISTS
+            nickname = data.get("nick_name")
+            if nickname is None or nickname == "":
+                return PARAMS_ERROR
+            if res := self.email.send_email(send_to=email,nickname=nickname):
+                return res
+        # 用户找回密码获取验证码
+        elif action == "forget_password_get_code":
+            if not self.user.check_user_exists(email=email):
+                return USER_UNEXISTS
+            else:
+                nickname = self.user.user_nickname(email=email)
+            if res := self.email.send_email(send_to=email,nickname=nickname):
+                return res
+        return PARAMS_ERROR
+
+    # 注册操作
+    def register_params(self,data: dict) -> Response:
+        settings_conf = self.yaml_conf.settings_conf()
+        keys = ["user_name","nick_name","password","email","phone","gender"]
+        if not settings_conf.get("registe_allow"):
+            return REGIST_UNALLOW
+        if registe_auth := settings_conf.get("registe_auth"):
+            keys.append("code")
+        for key in keys:
+            if key not in data:
+                return PARAMS_ERROR
+        if registe_auth:
+            email = data.get("email")
+            code = data.get("code")
+            verify_res = self.email.verify_code.match_code(email=email,code_=code)
+            if not verify_res:
+                return VERIFY_CODE_FAILED
+        register = Register()
+
+        res = register.register(username=data.get("user_name"),nick_name=data.get("nick_name"),
+                          password=data.get("password"),email=data.get("email"),
+                          phone=data.get("phone"),gender=data.get("gender"))
+        return res
+
     # 用户操作分发
-    def user_params(self, data: dict,token:str) -> Response:
-        expire,admin = self.tk_check.check_token(token=token)
-        if expire:
-            if type(expire) is bool:
-                return TOKEN_EXPIRE
-            return expire
+    @request_token_check_wrap
+    def user_params(self, data: dict) -> Response:
         if "action" not in data:
             return PARAMS_ERROR
         action = data.get("action")
         action_keys = ["add", "delete", "query", "modify", "detail","check"]
+        admin = data.get("admin")
         if action not in action_keys:
             return PARAMS_ERROR
 
@@ -166,68 +224,10 @@ class RequestParamsCheck:
                 return res
             return PERMISSION_ERROR
 
-    # 验证码请求
-    def verifycode_params(self,data: dict) -> Response:
-        yaml_conf = YamlConfig()
-        settings_conf = yaml_conf.settings_conf()
-        if not settings_conf.get("registe_allow"):
-            return REGIST_UNALLOW
-        action = data.get("action")
-        email = data.get("email")
-        self.user = User()
-        if not re.match(r"^[0-9a-zA-Z._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$",email):
-            return PARAMS_ERROR        
-        # 用户注册获取验证码
-        if action == "regist_get_code":
-            if self.user.check_user_exists(email=email):
-                return USER_EXISTS
-            nickname = data.get("nick_name")
-            if nickname is None or nickname == "":
-                return PARAMS_ERROR
-            if res := self.email.send_email(send_to=email,nickname=nickname):
-                return res
-        # 用户找回密码获取验证码
-        elif action == "forget_password_get_code":
-            if not self.user.check_user_exists(email=email):
-                return USER_UNEXISTS
-            else:
-                nickname = self.user.user_nickname(email=email)
-            if res := self.email.send_email(send_to=email,nickname=nickname):
-                return res
-        return PARAMS_ERROR
-
-    # 注册操作
-    def register_params(self,data: dict) -> Response:
-        settings_conf = self.yaml_conf.settings_conf()
-        keys = ["user_name","nick_name","password","email","phone","gender"]
-        if not settings_conf.get("registe_allow"):
-            return REGIST_UNALLOW
-        if registe_auth := settings_conf.get("registe_auth"):
-            keys.append("code")
-        for key in keys:
-            if key not in data:
-                return PARAMS_ERROR
-        if registe_auth:
-            email = data.get("email")
-            code = data.get("code")
-            verify_res = self.email.verify_code.match_code(email=email,code_=code)
-            if not verify_res:
-                return VERIFY_CODE_FAILED
-        register = Register()
-
-        res = register.register(username=data.get("user_name"),nick_name=data.get("nick_name"),
-                          password=data.get("password"),email=data.get("email"),
-                          phone=data.get("phone"),gender=data.get("gender"))
-        return res
-
     # 系统设置
-    def settings_params(self,data: dict,token: str) -> Response:
-        expire,admin = self.tk_check.check_token(token=token)
-        if expire:
-            if type(expire) is bool:
-                return TOKEN_EXPIRE
-            return expire
-        if not admin:
+    @request_token_check_wrap
+    def settings_params(self,data: dict) -> Response:
+        if not data.get("admin"):
             return PERMISSION_ERROR
         if "action" not in data:
             return PARAMS_ERROR
@@ -258,23 +258,134 @@ class RequestParamsCheck:
             return settings.email_conf_test()
     
     # 音乐文件扫描
-    def scan_params(self,token:str) -> Response:
-        expire,admin = self.tk_check.check_token(token=token)
-        if expire:
-            if type(expire) is bool:
-                return TOKEN_EXPIRE
-            return expire
-        if not admin:
+    @request_token_check_wrap
+    def scan_params(self,data:dict) -> Response:
+        if not data.get("admin"):
             return PERMISSION_ERROR
         return FileScan().start_scan()
-    
+
+    # 返回扫描状态
+    @request_token_check_wrap
+    def scan_status_params(self,data:dict) -> Response:
+        return FileScan().get_scan_status()
+
     # 音乐信息刮削
-    def completion_params(self,token:str) -> Response:
-        expire,admin = self.tk_check.check_token(token=token)
-        if expire:
-            if type(expire) is bool:
-                return TOKEN_EXPIRE
-            return expire
-        if not admin:
+    @request_token_check_wrap
+    def completion_params(self,data:dict) -> Response:
+        if not data.get("admin"):
             return PERMISSION_ERROR
         return InfoCompletion().start_completion()
+
+    # 获取媒体信息
+    @request_token_check_wrap
+    def songs_params(self,data:dict) -> Response:
+        limit = int(data.get("limit"))
+        offset = int(data.get("offset"))
+        order = data.get("order")
+        sort = data.get("sort")
+        title = data.get("title")
+        res = Songs().get_all_song(offset,limit,sort,order,title)
+        return res
+    
+    # 获取专辑信息
+    @request_token_check_wrap
+    def album_params(self,data:dict) -> Response:
+        limit = int(data.get("limit"))
+        offset = int(data.get("offset"))
+        order = data.get("order")
+        sort = data.get("sort")
+        name = data.get("name")
+        res = Album().get_all_Album(offset,limit,sort,order,name)
+        return res
+    
+    # 获取艺术家信息
+    @request_token_check_wrap
+    def artist_params(self,data:dict) -> Response:
+        limit = int(data.get("limit"))
+        offset = int(data.get("offset"))
+        order = data.get("order")
+        sort = data.get("sort")
+        user_id = data.get("user_id")
+        name = data.get("name")
+        res = Artist().get_all_artist(user_id,offset,limit,sort,order,name)
+        return res
+
+    # 歌单
+    @request_token_check_wrap
+    def playlist_params(self,data:dict) -> Response:
+        method = data.get("method")
+        p = Playlist()
+        if method == "POST":
+            name = data.get("name")
+            user_id = data.get("user_id")
+            comment = data.get("comment")
+            public = data.get("public")
+            res = p.playlist_add(name=name,comment=comment,public=public,user_id=user_id)
+            return res
+        elif method == "GET":
+            print(data)
+        else:
+            return PARAMS_ERROR
+
+    # 获取相似歌曲
+    @subsonic_token_check_wrap
+    def getsimilarsongs_params(self,data:dict) -> Response:
+        count = data.get("count")
+        media_id = data.get("id")
+        user_name = data.get("username")
+        res = Songs().get_similar_songs(count=count,media_id=media_id,user_name=user_name)
+        return res
+
+    # 获取歌手高播放量的歌曲
+    @subsonic_token_check_wrap
+    def gettopsons_params(self,data:dict) -> Response:
+        artist = data.get("artist")
+        count = data.get("count")
+        user_name = data.get("username")
+        res = Songs().get_songs_by_artist(artist=artist,count=count,user_name=user_name)
+        return res
+
+    # 记录音乐播放次数
+    @subsonic_token_check_wrap
+    def scrobble_params(self,data:dict) -> Response:
+        username = data.get("username")
+        media_id = data.get("id")
+        f_time = data.get("time")
+        user_id = data.get("user_id")
+        return Songs().scrobble_songs(f_time=f_time,media_id=media_id,username=username)
+
+    # 获取专辑封面
+    @subsonic_token_check_wrap
+    def cover_art_params(self,data:dict) -> Response:
+        id = data.get("id")
+        img_path = path.join(getcwd(),"data","album_img",id+".jpeg")
+        if not path.exists(img_path):
+            img_path = path.join(getcwd(),"data","album_img","tl.jpeg")
+        with open(img_path,"rb")as f:
+            img_byte = f.read()
+        response = make_response(img_byte)
+        response.headers["Content-Type"] = "image/jpeg"
+        return response
+
+    # 获取单一歌曲文件详细信息
+    @request_token_check_wrap
+    def song_single_params(self,data:dict) -> Response:
+        id = data.get("id")
+        res = Songs().get_song_info(id=id)
+        return res
+
+    # 媒体流
+    @subsonic_token_check_wrap
+    def media_stream_params(self,data:dict):
+        id = data.get("id")
+        songs = Songs()
+        res_dict = songs.get_song_path(id=id)
+        if res_dict:
+            response = send_file(res_dict.get("file_path"))
+            response.headers["X-Content-Duration"] = res_dict.get("duration")
+            return response
+        return PARAMS_ERROR
+            
+    # 系统心跳
+    def keepalive_params(self) -> Response:
+        return Keepalive().keepalive()

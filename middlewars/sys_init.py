@@ -6,8 +6,8 @@ from shortuuid import uuid
 from loguru import logger
 from uuid import uuid4
 
-from middlewars import SqliteInit,MysqlInit
-from utils import Sqlite_con,MysqlCon,YamlConfig,Password
+from middlewars import SqliteInit
+from utils import Sqlite_con,YamlConfig,Password
 
 
 class SysInit:
@@ -41,27 +41,15 @@ class SysInit:
         try:
             conf_dict = self.yaml_conf.load_yaml
             self._gen_jwt_secret_key()
-            using_db = conf.get("using_db")
             conf_dict.update({
                 "sys_init":True,
-                "using_db":using_db,
-                "db":{using_db:{}}
+                "db":path.join(getcwd(),"db","ATouMu.db")
             })
-            if using_db == "sqlite":
-                try:
-                    # 初始化sqlite数据库
-                    conf_dict.get("db").get(using_db).update({
-                        "path":path.join(getcwd(),"db","ATouMu.db")
-                    })
-                    self.yaml_conf.safe_dump_conf(conf_dict)
-                    sqlite_inti = SqliteInit()
-                    sqlite_inti.db_init()
-                except Exception as e:
-                    # 初始化失败则回退
-                    conf_dict["sys_init"] = False
-                    self.yaml_conf.safe_dump_conf(conf_dict)
-                    logger.error(e)
-                    return False
+            try:
+                # 初始化sqlite数据库
+                self.yaml_conf.safe_dump_conf(conf_dict)
+                sqlite_inti = SqliteInit()
+                sqlite_inti.db_init()
                 try:
                     # sqlite初始化管理员信息
                     sqlite_con = Sqlite_con()
@@ -70,38 +58,13 @@ class SysInit:
                 except Exception as e:
                     logger.error(e)
                     return False
-                return True
-            elif using_db == "mysql":
-                # 初始化mysql数据库
-                conf_dict.get("db").get(using_db).update({
-                    "host": conf.get("db").get(using_db).get("host"),
-                    "port": conf.get("db").get(using_db).get("port"),
-                    "user": conf.get("db").get(using_db).get("user"),
-                    "password": conf.get("db").get(using_db).get("password"),
-                    "database": conf.get("db").get(using_db).get("database")
-                })
+            except Exception as e:
+                # 初始化失败则回退
+                conf_dict["sys_init"] = False
                 self.yaml_conf.safe_dump_conf(conf_dict)
-                try:
-                    # 测试数据库连接
-                    mysql_init = MysqlInit()
-                    mysql_init.createdatabase(conf_dict.get("db").get(using_db).get("database"))
-                    mysql_init.init_tables()
-                except Exception as e:
-                    # 数据库连接失败则回退
-                    logger.error(str(format_exc()))
-                    conf_dict["sys_init"] = False
-                    self.yaml_conf.safe_dump_conf(conf_dict)
-                    return False
-                try:
-                    # mysql初始化管理员信息
-                    mysql_con = MysqlCon()
-                    user_sql = self._adminuserInit(user_conf)
-                    mysql_con.sql2commit(user_sql)
-                except Exception as e:
-                    logger.error(e)
-                return True
-            else:
+                logger.error(format_exc())
                 return False
+            return True
         except:
             logger.error(format_exc())
             return False

@@ -7,18 +7,14 @@ from loguru import logger
 from shortuuid import uuid
 
 from const import *
-from utils import Sqlite_con, MysqlCon, Password, YamlConfig
+from utils import Sqlite_con, Password, YamlConfig
 from users import User
 from middlewars import VerifyCode
 
 
 class Register:
     def __init__(self):
-        using_db = YamlConfig().check_sys_usingdb()
-        if using_db == "sqlite":
-            self.sql_con = Sqlite_con()
-        elif using_db == "mysql":
-            self.sql_con = MysqlCon()
+        self.sql_con = Sqlite_con()
         self.user = User()
         self.passwd = Password()
 

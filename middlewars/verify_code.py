@@ -1,7 +1,7 @@
 from random import randint
 from datetime import datetime,timedelta
 
-from utils import Sqlite_con,MysqlCon,YamlConfig
+from utils import Sqlite_con,YamlConfig
 
 class VerifyCode:
    
@@ -9,10 +9,7 @@ class VerifyCode:
     def generate_code(self,email:str) -> str:
         yaml_conf = YamlConfig()
         using_db = yaml_conf.check_sys_usingdb()
-        if using_db == "sqlite":
-            self.sql_con = Sqlite_con()
-        elif using_db == "mysql":
-            self.sql_con = MysqlCon()
+        self.sql_con = Sqlite_con()
         code = randint(100000,999999)
         now = datetime.now()
         expire = int((now + timedelta(minutes=30)).timestamp())
@@ -31,11 +28,7 @@ class VerifyCode:
     # 验证验证码
     def match_code(self,email:str,code_:str) -> bool:
         yaml_conf = YamlConfig()
-        using_db = yaml_conf.check_sys_usingdb()
-        if using_db == "sqlite":
-            self.sql_con = Sqlite_con()
-        elif using_db == "mysql":
-            self.sql_con = MysqlCon()
+        self.sql_con = Sqlite_con()
         sql = f"select code,expire from verify_code_temp where email=\"{email}\";"
         res = self.sql_con.sql2commit(sql=sql)
         if res != []:

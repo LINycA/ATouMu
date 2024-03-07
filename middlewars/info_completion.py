@@ -11,7 +11,7 @@ from threading import Thread
 from loguru import logger
 
 
-from utils import Sqlite_con,MysqlCon,YamlConfig
+from utils import Sqlite_con,YamlConfig
 
 
 class InfoCompletion:
@@ -49,12 +49,7 @@ class InfoCompletion:
         return lrc_path
     # 匹配歌曲基础信息
     def search_song_info(self,info_list:list):
-        yaml_conf = YamlConfig()
-        using_db = yaml_conf.check_sys_usingdb()
-        if using_db == "sqlite":
-            sql_con = Sqlite_con()
-        elif using_db == "mysql":
-            sql_con = MysqlCon()
+        sql_con = Sqlite_con()
         def match_music_info(info:dict,res:dict):
             try:
                 mid = info.get("id")
@@ -111,13 +106,8 @@ class InfoCompletion:
         logger.add(path.join(getcwd(),"log",f"info_completion_{curdate}.log"))
         logger.info("信息收集开始")
         try:
-            yaml_conf = YamlConfig()
-            using_db = yaml_conf.check_sys_usingdb()
-            if using_db == "sqlite":
-                sql_con = Sqlite_con()
-            elif using_db == "mysql":
-                sql_con = MysqlCon()
-            get_lack_info_sql = 'select id,title,album_name from media where artist_name = "" or lyric_path = "" or image_path = "";'
+            sql_con = Sqlite_con()
+            get_lack_info_sql = 'select id,title,album_name from media_file where artist_name = "" or lyrics = "" or image_path = "";'
             res = sql_con.sql2commit(get_lack_info_sql)
             need_completion_info_list = []
             for i in res:

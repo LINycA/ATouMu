@@ -5,5 +5,7 @@ config.yaml
 *.flac
 *vscode*
 *idea*
-data*
+data/album_img/*.jpeg
+data/lrcs/*.lrc
+!data/album_img/tl.jpeg
 *.log

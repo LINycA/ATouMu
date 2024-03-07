@@ -11,7 +11,11 @@ dbutils = "*"
 pyyaml = "*"
 pymysql = "*"
 loguru = "*"
-shortuuid = "*"
+uvicorn = "*"
+gunicorn = "*"
+gevent = "*"
+waitress = "*"
+pipdeptree = "*"
 
 [dev-packages]
 

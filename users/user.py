@@ -7,16 +7,12 @@ from flask import Response
 from shortuuid import uuid
 
 from const import *
-from utils import Sqlite_con, MysqlCon, YamlConfig
+from utils import Sqlite_con, YamlConfig
 
 
 class User:
     def __init__(self):
-        using_db = YamlConfig().check_sys_usingdb()
-        if using_db == "sqlite":
-            self.sql_con = Sqlite_con()
-        elif using_db == "mysql":
-            self.sql_con = MysqlCon()
+        self.sql_con = Sqlite_con()
 
     # 用户数据检测
     def user_info_check(self,nickname:str,email:str,phone:str,gender:str,username:str=""):
@@ -54,18 +50,17 @@ class User:
 
     # 获取用户详细信息
     def user_detail(self, userid: str) -> Response:
-        sql = f"select nick_name,password,email,phone,gender,admin,create_time,user_name,last_login from users where user_id=\"{userid}\";"
+        sql = f"select nick_name,user_name,email,create_time,admin,last_login from users where user_id=\"{userid}\";"
         try:
             res = self.sql_con.sql2commit(sql=sql)
             user_dict = {
                 "nickname": res[0][0],
+                "username": res[0][1],
                 "email": res[0][2],
-                "phone": res[0][3],
-                "gender": res[0][4],
-                "admin": res[0][5],
-                "create_time": res[0][6],
-                "username": res[0][7],
-                "last_login": res[0][8],
+                "admin": res[0][4],
+                "create_time": res[0][3],
+                "username": res[0][1],
+                "last_login": res[0][5],
                 "userid": userid
             }
             return trans_res({"ret":200,"msg":"成功","data":user_dict})

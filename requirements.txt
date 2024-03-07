@@ -1,0 +1,38 @@
+DBUtils==3.0.3
+flask==3.0.0
+  - blinker [required: >=1.6.2, installed: 1.7.0]
+  - click [required: >=8.1.3, installed: 8.1.7]
+    - colorama [required: Any, installed: 0.4.6]
+  - importlib-metadata [required: >=3.6.0, installed: 7.0.1]
+    - zipp [required: >=0.5, installed: 3.17.0]
+  - itsdangerous [required: >=2.1.2, installed: 2.1.2]
+  - Jinja2 [required: >=3.1.2, installed: 3.1.3]
+    - MarkupSafe [required: >=2.0, installed: 2.1.3]
+  - werkzeug [required: >=3.0.0, installed: 3.0.1]
+    - MarkupSafe [required: >=2.1.1, installed: 2.1.3]
+gevent==23.9.1
+  - cffi [required: >=1.12.2, installed: 1.16.0]
+    - pycparser [required: Any, installed: 2.21]
+  - greenlet [required: >=2.0.0, installed: 3.0.3]
+  - zope.event [required: Any, installed: 5.0]
+    - setuptools [required: Any, installed: 69.0.3]
+  - zope.interface [required: Any, installed: 6.1]
+    - setuptools [required: Any, installed: 69.0.3]
+gunicorn==21.2.0
+  - packaging [required: Any, installed: 23.2]
+loguru==0.7.2
+  - colorama [required: >=0.3.4, installed: 0.4.6]
+  - win32-setctime [required: >=1.0.0, installed: 1.1.0]
+mutagen==1.47.0
+pip==23.3.1
+pipdeptree==2.13.2
+PyJWT==2.8.0
+PyMySQL==1.1.0
+PyYAML==6.0.1
+uvicorn==0.25.0
+  - click [required: >=7.0, installed: 8.1.7]
+    - colorama [required: Any, installed: 0.4.6]
+  - h11 [required: >=0.8, installed: 0.14.0]
+  - typing-extensions [required: >=4.0, installed: 4.9.0]
+waitress==2.1.2
+wheel==0.42.0
