@@ -221,8 +221,20 @@ def Api(action):
                 try:
                     postdata = json.loads(request.data)
                     data.update(postdata)
-                    print(data)
                     res = dispatcher.playlist_params(data=data)
+                    return res
+                except:
+                    logger.error(format_exc())
+                    return PARAMS_ERROR
+            elif method == "GET":
+                try:
+                    data.update({
+                        "offset":request.args.get("_start"),
+                        "limit":request.args.get("_end"),
+                        "order_by":request.args.get("_sort")
+                        })
+                    res = dispatcher.playlist_params(data=data)
+                    return res
                 except:
                     logger.error(format_exc())
                     return PARAMS_ERROR

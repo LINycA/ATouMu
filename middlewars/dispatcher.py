@@ -1,17 +1,16 @@
-from os import path, getcwd, mkdir
+from os import path, getcwd
 from functools import wraps
 import re
 from traceback import format_exc
 
 from flask import Response,send_file
-from pymysql import Connect
 from loguru import logger
 
 from const import *
 from users import User,Login,TokenCheck,Register
-from app import Songs,Album,Artist
+from app import Songs,Album,Artist,Playlist
 from middlewars import SysInit,Email,FileScan,InfoCompletion,Keepalive
-from utils import YamlConfig,Sqlite_con
+from utils import YamlConfig
 from settings import Settings
 
 
@@ -312,8 +311,16 @@ class RequestParamsCheck:
     @request_token_check_wrap
     def playlist_params(self,data:dict) -> Response:
         method = data.get("method")
+        p = Playlist()
         if method == "POST":
-            
+            name = data.get("name")
+            user_id = data.get("user_id")
+            comment = data.get("comment")
+            public = data.get("public")
+            res = p.playlist_add(name=name,comment=comment,public=public,user_id=user_id)
+            return res
+        elif method == "GET":
+            print(data)
 
     # 获取相似歌曲
     @subsonic_token_check_wrap
