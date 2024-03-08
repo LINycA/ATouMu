@@ -9,9 +9,10 @@ from const import *
 from threading import Thread
 
 from loguru import logger
+from shortuuid import uuid
 
-
-from utils import Sqlite_con,YamlConfig
+from utils import Sqlite_con
+from middlewars import calculation_table_info
 
 
 class InfoCompletion:
@@ -29,7 +30,7 @@ class InfoCompletion:
                 return info,None
     # 歌曲照片保存
     def save_img(self,pic_name:str,url:str) -> str:
-        img_path = path.join(getcwd(),"data","album_img",pic_name+".jpg")
+        img_path = path.join(getcwd(),"data","album_img",pic_name+".jpeg")
         if path.exists(img_path):
             return img_path
         res = get(url=url)
@@ -53,6 +54,7 @@ class InfoCompletion:
         def match_music_info(info:dict,res:dict):
             try:
                 mid = info.get("id")
+                album_id = info.get("album_id")
                 title = info.get("title")
                 album = info.get("album")
                 pic_url = None
@@ -66,17 +68,26 @@ class InfoCompletion:
                     if album != alname:
                         continue
                     pic_url = al.get("picUrl")
-                    publish_time = n.get("publishTime")
+                    publish_time = int(n.get("publishTime"))/1000
+                    publish_time_str = datetime.fromtimestamp(publish_time).strftime("%Y-%m-%d %H:%M:%S")
                     netease_id = n.get("id")
                     break
                 if pic_url:
-                    img_path = self.save_img(title+"-"+album,pic_url)
-                    lrc_path = self.save_lyric(ar_name+"-"+album+"-"+title,netease_id=netease_id)
+                    img_path = self.save_img(album_id,pic_url)
+                    lrc_path = self.save_lyric(mid,netease_id=netease_id)
                     curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    media_sql = f'update media set netease_id="{netease_id}",artist_name="{ar_name}",image_path="{img_path}",lyric_path="{lrc_path}",update_at="{curdate}" where id="{mid}";'
-                    artist_sql = f'insert or ignore into artist(name) values("{ar_name}");'
+                    full_text = ar_name+"  "+album
+                    media_sql = f'update media_file set netease_id="{netease_id}",artist="{ar_name}",artist_id="{artist_id}",image_path="{img_path}",lyrics="{lrc_path}",updated_at="{curdate}" where id="{mid}";'
+                    if "|" in ar_name:
+                        for name in ar_name.split("|"):
+                            artist_id = uuid(name)
+                            artist_sql = f'insert or ignore into artist(id,name,full_text,order_artist_name) values("{artist_id}","{ar_name}","{full_text}","{ar_name}");'
+                        sql_con.sql2commit(artist_sql)
+                    else:
+                        artist_id = uuid(ar_name)
+                        artist_sql = f'insert or ignore into artist(id,name,full_text,order_artist_name) values("{artist_id}","{ar_name}","{full_text}","{ar_name}");'
+                        sql_con.sql2commit(artist_sql)
                     sql_con.sql2commit(media_sql)
-                    sql_con.sql2commit(artist_sql)
                 else:
                     logger.warning(mid+"  "+title+" not match")
             except:
@@ -107,12 +118,13 @@ class InfoCompletion:
         logger.info("信息收集开始")
         try:
             sql_con = Sqlite_con()
-            get_lack_info_sql = 'select id,title,album_name from media_file where artist_name = "" or lyrics = "" or image_path = "";'
+            get_lack_info_sql = 'select id,album_id,title,album from media_file where artist = "" or lyrics = "" or image_path = "";'
             res = sql_con.sql2commit(get_lack_info_sql)
             need_completion_info_list = []
             for i in res:
-                need_completion_info_list.append({"id":i[0],"title":i[1],"album":i[2]})
+                need_completion_info_list.append({"id":i[0],"album_id":i[1],"title":i[2],"album":i[3]})
             self.search_song_info(need_completion_info_list)
+            calculation_table_info()
         except:
             logger.error(format_exc())
         logger.success("信息收集结束")
