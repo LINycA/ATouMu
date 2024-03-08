@@ -137,6 +137,31 @@ class FileScan:
                 logger.warning(file_path+"缺少专辑名称")
             insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=self.unkown_artist,artist_id=self.unkown_artist_id,has_cover_art=has_cover_art,
                       size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=self.unkown_artist,channels=channels,lrc_path="")
+        
+        # 计算数值
+        def calculation_table_info():
+            logger.info("计算开始")
+            album_ids_sql = "select id from album;"
+            album_ids = [i[0] for i in sql_con.sql2commit(album_ids_sql)]
+            for aid in album_ids:
+                album_song_count_update = f"""update album set
+                song_count=(select count(1) from media_file where album_id="{aid}"),
+                duration=(select sum(duration) from media_file where album_id="{aid}"),
+                size=(select sum(size) from media_file where album_id="{aid}")
+                where id="{aid}";
+                """
+                sql_con.sql2commit(album_song_count_update)
+            artist_ids_sql = "select id from artist;"
+            artist_ids = [i[0] for i in sql_con.sql2commit(artist_ids_sql)]
+            for aid in artist_ids:
+                artist_count_update_sql = f"""update artist set
+                album_count=(select count(1) from album where artist_id="{aid}"),
+                song_count=(select count(1) from media_file where artist_id="{aid}"),
+                size=(select sum(size) from media_file where artist_id="{aid}")
+                where id="{aid}";
+                """
+                sql_con.sql2commit(artist_count_update_sql)
+            logger.success("计算结束")
             
         # 文件扫描
         try:
@@ -163,6 +188,7 @@ class FileScan:
                             flac_info_extract(file_path=file)
                         except:
                             logger.error(format_exc())
+            calculation_table_info()
             logger.success("扫描结束")
         except:
             logger.error(format_exc())
