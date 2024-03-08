@@ -130,6 +130,62 @@ def api_song(action):
         logger.error(format_exc())
         return PARAMS_ERROR
 
+# 歌单接口歌曲拓展
+@app.route("/api/playlist/<pid>/tracks",methods=["GET","POST","DELETE"])
+@check_sys_init_wrap
+def api_playlist(pid):
+    token = request.headers.get("Authorization") if request.headers.get("Authorization") else request.headers.get("X-Nd-Authorization")
+    data = {"token":token.replace("Bearer ","") if token else "","playlist_id":pid}
+    method = request.method
+    data.update({"method":method})
+    try:
+        if method == "GET":
+            data.update({
+                "limit":request.args.get("_end"),
+                "offset":request.args.get("_start"),
+                "order":request.args.get("_order"),
+                "order_by":request.args.get("_sort"),
+                "playlist_id":request.args.get("playlist_id")
+            })
+            res = dispatcher.playlist_song_params(data=data)
+            return res
+        elif method == "POST":
+            postdata = json.loads(request.data)
+            data.update(postdata)
+            res = dispatcher.playlist_song_params(data=data)
+            return res
+        elif method == "DELETE":
+            data.update({
+                "id":request.args.get("id")
+            })
+            res = dispatcher.playlist_song_params(data=data)
+            return res
+        else:
+            logger.warning(pid)
+            return PARAMS_ERROR
+    except:
+        logger.error(format_exc())
+        return PARAMS_ERROR
+
+# 歌单接口歌单删除拓展
+@app.route("/api/playlist/<pid>",methods=["DELETE"])
+@check_sys_init_wrap
+def api_playlist_delete(pid:str):
+    token = request.headers.get("Authorization") if request.headers.get("Authorization") else request.headers.get("X-Nd-Authorization")
+    data = {"token":token.replace("Bearer ","") if token else ""}
+    method = request.method
+    data.update({"method":method})
+    try:
+        data.update({"playlist_id":pid})
+        if method == "DELETE":
+            res = dispatcher.playlist_params(data=data)
+            return res
+        logger.warning(method+"  "+pid)
+        return PARAMS_ERROR
+    except:
+        logger.error(format_exc())   
+        return PARAMS_ERROR
+
 # api接口
 @app.route("/api/<action>",methods=["GET","POST"])
 @check_sys_init_wrap

@@ -323,9 +323,40 @@ class RequestParamsCheck:
             res = p.playlist_add(name=name,comment=comment,public=public,user_id=user_id)
             return res
         elif method == "GET":
-            print(data)
+            limit = data.get("limit")
+            offset = data.get("offset")
+            order_by = data.get("order_by")
+            res = p.playlist_get(order_by=order_by,limit=limit,offset=offset)
+            return res
+        elif method == "DELETE":
+            playlist_id = data.get("playlist_id")
+            res = p.playlist_delete(pid=playlist_id)
+            return res
         else:
             return PARAMS_ERROR
+    
+    # 歌单歌曲
+    @request_token_check_wrap
+    def playlist_song_params(self,data:dict) -> Response:
+        p = Playlist()
+        method = data.get("method")
+        if method == "POST":
+            pid = data.get("playlist_id")
+            song_ids = data.get("ids")
+            return p.playlist_song_add(sids=song_ids,pid=pid)
+        elif method == "GET":
+            pid = data.get("playlist_id")
+            offset = data.get("offset")
+            limit = data.get("limit")
+            order = data.get("order")
+            order_by = data.get("order_by")
+            user_id = data.get("user_id")
+            return p.playlist_song_get(pid=pid,offset=offset,limit=limit,order=order,order_by=order_by,user_id=user_id)
+        elif method == "DELETE":
+            sid = data.get("id")
+            pid = data.get("playlist_id")
+            res = p.playlist_song_delete(pid=pid,sid=sid)
+            return res
 
     # 获取相似歌曲
     @subsonic_token_check_wrap
