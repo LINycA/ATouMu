@@ -41,7 +41,6 @@ class Artist:
             arid = ar.get("id")
             ann_sql = f"""select play_count,rating,starred,starred_at from annotation where user_id="{user_id}" and item_id="{arid}";"""
             ann_res = sql_con.sql2commit(ann_sql)
-            print(ann_res)
             if ann_res:
                 ann_res = ann_res[0]
                 ar.update({
