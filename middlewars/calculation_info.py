@@ -7,7 +7,12 @@ from utils import Sqlite_con
 # 计算数值
 def calculation_table_info():
     sql_con = Sqlite_con()
+    # 清除无用数据
     logger.info("计算开始")
+    delete_artist_sql = f"""delete from artist where id not in (select distinct artist_id from media_file);"""
+    delete_album_sql = f"""delete from album where id not in (select distinct album_id from media_file);"""
+    sql_con.sql2commit(delete_artist_sql)
+    sql_con.sql2commit(delete_album_sql)
     album_ids_sql = "select id from album;"
     album_ids = [i[0] for i in sql_con.sql2commit(album_ids_sql)]
     for aid in album_ids:

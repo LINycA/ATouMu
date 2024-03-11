@@ -109,6 +109,7 @@ def Rest(action):
             res.headers["x-frame-options"] = "DENY"
             res.headers["permissions-policy"] = "autoplay=(), camera=(), microphone=(), usb=()"
             res.headers["x-content-type-options"] = "nosniff"
+            res.headers["content-type"] = "audio/mpeg"
             return res
         logger.warning("action: "+action+"  找不到对应功能")
         return PARAMS_ERROR

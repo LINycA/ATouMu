@@ -11,8 +11,10 @@ class Album:
     def get_all_Album(self,page:int,limit:int,order_by:str,order:str,name:str) -> Response:
         if type(page) is not int or type(limit) is not int:
             return PARAMS_ERROR
-        if order_by == "recently_added":
-            order_by = "created_at"
+        order_by_dict = {"recently_added":"created_at","createdAt":"created_at"}
+        if order_by not in order_by_dict:
+            return PARAMS_ERROR
+        order_by = order_by_dict.get(order_by)
         filter_name = ""
         if name:
             filter_name = f"""where name like "%{name}%" """

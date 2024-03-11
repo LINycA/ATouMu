@@ -6,7 +6,6 @@ from traceback import format_exc
 from datetime import datetime
 
 from mutagen import flac,mp3
-from shortuuid import uuid
 from loguru import logger
 
 from utils import Sqlite_con,YamlConfig
@@ -30,7 +29,7 @@ class FileScan:
         if not path.exists(path.join(getcwd(),"log")):
             mkdir(path.join(getcwd(),"log"))
         self.unkown_artist = "unkown"
-        self.unkown_artist_id = uuid(self.unkown_artist)
+        self.unkown_artist_id = md5(self.unkown_artist.encode()).hexdigest()
     # 文件扫描
     def _scan(self):
         self._dir_init()
@@ -89,14 +88,14 @@ class FileScan:
             duration = info.info.length
             media_id = get_media_id(file_path=file_path)
             title = str(info.get("TIT2"))
-            artist = str(info.get("TPE1"))
-            artist_id = uuid(artist)
+            artist = str(info.get("TPE1")).lower()
+            artist_id = md5(artist.encode()).hexdigest()
             if not artist:
                 artist = self.unkown_artist
                 artist_id = self.unkown_artist_id
             lrc = str(info.get("USLT::eng"))
-            album = str(info.get("TALB"))
-            album_id = uuid(album)
+            album = str(info.get("TALB")).lower()
+            album_id = md5(album.encode()).hexdigest()
             try:
                 jpeg = info.get("APIC:").__dict__.get("data")
             except:
@@ -105,18 +104,19 @@ class FileScan:
             if jpeg:
                 has_cover_art = True
             lrc_path = ""
-            if lrc is not None and album is not None:
-                lrc_path = path.join(lrc_root_path,media_id+".lrc")
+            lrc_path = path.join(lrc_root_path,media_id+".lrc")
+            if not path.exists(lrc_path):
                 with open(lrc_path,"w",encoding="utf-8")as f:
                     f.write(lrc)
             album_img_path = ""
-            if jpeg is not None and album is not None:
+            if jpeg is not None:
                 album_img_path = path.join(album_img_root_path,album_id+".jpeg")
                 media_img_path = path.join(album_img_root_path,media_id+".jpeg")
-                with open(album_img_path,"wb")as f:
-                    f.write(jpeg)
-                with open(media_img_path,"wb")as f:
-                    f.write(jpeg)
+                if not path.exists(album_img_path):
+                    with open(album_img_path,"wb")as f:
+                        f.write(jpeg)
+                    with open(media_img_path,"wb")as f:
+                        f.write(jpeg)
             full_text = " ".join([artist,album,title])
             insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=artist,artist_id=artist_id,
                       has_cover_art=has_cover_art,size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=full_text,channels=channels,lrc_path=lrc_path)
@@ -131,8 +131,8 @@ class FileScan:
             duration = info.info.length
             media_id = get_media_id(file_path=file_path)
             title = str(info.get("title")[0])
-            album = str(info.get("album")[0])
-            album_id = uuid(album)
+            album = str(info.get("album")[0]).lower()
+            album_id = md5(album.encode()).hexdigest()
             has_cover_art = False
             if album is None:
                 logger.warning(file_path+"缺少专辑名称")
