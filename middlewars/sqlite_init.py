@@ -58,6 +58,7 @@ class SqliteInit:
         album_table_sql = """
         create table album(
         id varchar(255) not null,
+        netease_id varchar(255) default null,
         name varchar(255) not null,
         artist_id varchar(255) default '' not null,
         embed_art_path varchar(255) default '' not null,
@@ -114,6 +115,7 @@ class SqliteInit:
         artist_table_sql = """
         create table artist(
         id varchar(255) not null,
+        netease_id varchar(255) default null,
         name varchar(255) not null,
         album_count integer default 0 not null,
         full_text varchar(255) default '',

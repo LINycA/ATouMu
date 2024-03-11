@@ -4,6 +4,7 @@ from hashlib import md5
 from threading import Thread
 from traceback import format_exc
 from datetime import datetime
+from base64 import b64decode
 
 from mutagen import flac,mp3
 from loguru import logger
@@ -111,11 +112,8 @@ class FileScan:
             album_img_path = ""
             if jpeg is not None:
                 album_img_path = path.join(album_img_root_path,album_id+".jpeg")
-                media_img_path = path.join(album_img_root_path,media_id+".jpeg")
                 if not path.exists(album_img_path):
                     with open(album_img_path,"wb")as f:
-                        f.write(jpeg)
-                    with open(media_img_path,"wb")as f:
                         f.write(jpeg)
             full_text = " ".join([artist,album,title])
             insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=artist,artist_id=artist_id,
@@ -132,16 +130,34 @@ class FileScan:
             media_id = get_media_id(file_path=file_path)
             title = str(info.get("title")[0])
             album = str(info.get("album")[0]).lower()
+            img_data = info.get("images")
+            lrc_data = info.get("lrc")
+            artist_info = info.get("artist")
             album_id = md5(album.encode()).hexdigest()
             has_cover_art = False
+            artist = self.unkown_artist
+            artist_id = self.unkown_artist_id
+            if artist_info:
+                artist = artist_info[0]
+                artist_id = md5(artist.encode()).hexdigest()
+            if lrc_data:
+                lrc_path = path.join(getcwd(),"data","lrcs",media_id+".lrc")
+                with open(lrc_path,"w",encoding="utf-8")as f:
+                    f.write(lrc_data[0])
+            if img_data:
+                img_path = path.join(getcwd(),"data","album_img",album_id+".jpeg")
+                img_data = b64decode(img_data[0])
+                with open(img_path,"rb")as f:
+                    f.write(img_data)
             if album is None:
                 logger.warning(file_path+"缺少专辑名称")
-            insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=self.unkown_artist,artist_id=self.unkown_artist_id,has_cover_art=has_cover_art,
+            insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=artist,artist_id=artist_id,has_cover_art=has_cover_art,
                       size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=self.unkown_artist,channels=channels,lrc_path="")
             
         # 文件扫描
         try:
             file_list = [path.join(media_path,i) for i in listdir(media_path)]
+            logger.info("扫描开始")
             for file in file_list:
                 if path.isdir(file):
                     try:
@@ -154,13 +170,11 @@ class FileScan:
                     file_type = file.split(".")[-1].lower()
                     if file_type == "mp3":
                         try:
-                            logger.success(file)
                             mp3_info_extract(file_path=file)
                         except:
                             logger.error(format_exc())
                     elif file_type == "flac":
                         try:
-                            logger.success(file)
                             flac_info_extract(file_path=file)
                         except:
                             logger.error(format_exc())

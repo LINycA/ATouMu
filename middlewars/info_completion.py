@@ -1,12 +1,14 @@
 import asyncio
 import time
-from os import path,getcwd
+from os import path,getcwd,listdir
+from base64 import b64encode
 from traceback import format_exc
 from datetime import datetime
 from threading import Thread
 from hashlib import md5
 
 import httpx
+from mutagen import mp3,flac,id3
 from loguru import logger
 from requests import get
 
@@ -74,7 +76,6 @@ class InfoCompletion:
                     break
                 if pic_url:
                     img_path = self.save_img(album_id,pic_url)
-                    img_pat1 = self.save_img(mid,pic_url)
                     lrc_path = self.save_lyric(mid,netease_id=netease_id)
                     curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     full_text = ar_name+"  "+album
@@ -91,14 +92,12 @@ class InfoCompletion:
             except:
                 logger.error(format_exc())
         # sem = asyncio.Semaphore(5)
-        print(len(info_list))
         while info_list:
             info_list_cp = info_list.copy()
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             tasks = []
             for i in info_list_cp[:50]:
-                print(i)
                 info_list.remove(i)
                 title = i.get("title")
                 album = i.get("album")
@@ -111,6 +110,70 @@ class InfoCompletion:
                     match_music_info(info=info,res=res.json())
                 except:
                     logger.error(format_exc())
+    # 歌曲信息回放至文件
+    def info_back2file(self):
+        # mp3信息回存
+        def mp3_info_save(path_f:str,album_id:str,mid:str,title:str,album:str,artist:str):
+            info = mp3.MP3(path_f)
+            info.clear()
+            info.tags.add(id3.TIT2(encoding=3,text=title))
+            info.tags.add(id3.TPE1(encoding=3,text=artist))
+            info.tags.add(id3.TALB(encoding=3,text=album))
+            # 歌词写入
+            with open(path.join("data","lrcs",mid+".lrc"),"r",encoding="utf-8")as f:
+                lrc = f.read()
+            info.tags.add(id3.Frames["USLT"](encoding=id3.Encoding.UTF8,lang="eng",text=lrc))
+            # 图片写入
+            try:
+                with open(path.join(getcwd(),"data","album_img",album_id+".jpeg"),"rb")as f:
+                    img_content = f.read()
+                info.tags.add(id3.APIC(encoding=id3.Encoding.LATIN1,mime="image/jpeg",type=id3.PictureType.COVER_FRONT,data=img_content))
+            except Exception as e:
+                logger.error(e)
+                pass
+            info.save()
+        # flac信息回存
+        def flac_info_save(path_f:str,album_id:str,mid:str,title:str,album:str,artist:str):
+            info = flac.FLAC(path_f)
+            info["album"] = album
+            info["title"] = title
+            info["artist"] = artist
+            # 歌词写入
+            try:
+                with open(path.join(getcwd(),"data","lrcs",mid+".lrc"),"r",encoding="utf-8")as f:
+                    lrc = f.read()
+                info["lrc"] = lrc
+            except Exception as e:
+                logger.error(e)
+                pass
+            # 图片写入 
+            try:
+                with open(path.join(getcwd(),"data","album_img",album_id+".jpeg"),"rb")as f:
+                    img_content = f.read()
+                info["image"] = b64encode(img_content).decode("utf-8")
+            except Exception as e:
+                logger.error(e)
+                pass
+            info.save()
+
+        sql_con = Sqlite_con()
+        get_media_file_sql = f"""select suffix,album,artist,album_id,id,title,path from media_file;"""
+        media_file_res = [{
+            "suffix":i[0],
+            "album":i[1],
+            "artist":i[2],
+            "album_id":i[3],
+            "id":i[4],
+            "title":i[5],
+            "path":i[6]
+        } for i in sql_con.sql2commit(get_media_file_sql)]
+        for i in media_file_res:
+            suffix = i.get("suffix")
+            if suffix == "mp3":
+                mp3_info_save(path_f=i["path"],album_id=i["album_id"],mid=i["id"],title=i["title"],album=i["album"],artist=i["artist"])
+            elif suffix == "flac":
+                flac_info_save(path_f=i["path"],album_id=i["album_id"],mid=i["id"],title=i["title"],album=i["album"],artist=i["artist"])
+                
     # 音乐信息刮削，目前支持网易云音乐
     def _completion(self):
         curdate = datetime.now().strftime("%Y-%m-%d")
@@ -118,13 +181,15 @@ class InfoCompletion:
         logger.info("信息收集开始")
         try:
             sql_con = Sqlite_con()
-            get_lack_info_sql = 'select id,album_id,title,artist,album from media_file where artist = "" or lyrics = "" or image_path = "";'
+            get_lack_info_sql = 'select id,album_id,title,artist,album from media_file where artist = "" or lyrics = "";'
             res = sql_con.sql2commit(get_lack_info_sql)
             need_completion_info_list = []
             for i in res:
                 need_completion_info_list.append({"id":i[0],"album_id":i[1],"title":i[2],"artist_name":i[3],"album":i[4]})
             self.search_song_info(need_completion_info_list)
             calculation_table_info()
+            # 信息回放至文件
+            self.info_back2file()
         except:
             logger.error(format_exc())
         logger.success("信息收集结束")

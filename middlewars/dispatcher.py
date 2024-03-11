@@ -10,7 +10,7 @@ from const import *
 from users import User,Login,TokenCheck,Register
 from app import Songs,Album,Artist,Playlist
 from middlewars import SysInit,Email,FileScan,InfoCompletion,Keepalive
-from utils import YamlConfig
+from utils import YamlConfig,Sqlite_con
 from settings import Settings
 
 
@@ -388,10 +388,20 @@ class RequestParamsCheck:
     # 获取专辑封面
     @subsonic_token_check_wrap
     def cover_art_params(self,data:dict) -> Response:
+        sql_con = Sqlite_con()
+        def get_album_id(mid:str) -> str:
+            get_albumid_sql = f"""select album_id from media_file where id="{mid}";"""
+            alb_id = sql_con.sql2commit(get_albumid_sql)
+            print(alb_id)
+            if alb_id:
+                return alb_id[0][0]
+            else:
+                return "tl"
         id = data.get("id")
         img_path = path.join(getcwd(),"data","album_img",id+".jpeg")
         if not path.exists(img_path):
-            img_path = path.join(getcwd(),"data","album_img","tl.jpeg")
+            album_id = str(get_album_id(id))
+            img_path = path.join(getcwd(),"data","album_img",album_id+".jpeg")
         with open(img_path,"rb")as f:
             img_byte = f.read()
         response = make_response(img_byte)
