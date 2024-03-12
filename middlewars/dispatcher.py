@@ -358,6 +358,21 @@ class RequestParamsCheck:
             res = p.playlist_song_delete(pid=pid,sid=sid)
             return res
 
+    # 获取艺术家详情
+    @subsonic_token_check_wrap
+    def artist_info_params(self,data:dict) -> Response:
+        artist_id = data.get("artist_id")
+        img_path = path.join(getcwd(),"data","artist_img",artist_id+".jpeg")
+        if path.exists(img_path):
+            with open(img_path,"rb")as f:
+                content = f.read()
+            res = make_response(content)
+            res.headers["Content-Type"] = "image/jpeg"
+            return res
+        else:
+            logger.warning(img_path+"  文件找不到")
+            return PARAMS_ERROR
+
     # 获取相似歌曲
     @subsonic_token_check_wrap
     def getsimilarsongs_params(self,data:dict) -> Response:
@@ -392,7 +407,6 @@ class RequestParamsCheck:
         def get_album_id(mid:str) -> str:
             get_albumid_sql = f"""select album_id from media_file where id="{mid}";"""
             alb_id = sql_con.sql2commit(get_albumid_sql)
-            print(alb_id)
             if alb_id:
                 return alb_id[0][0]
             else:
@@ -402,6 +416,8 @@ class RequestParamsCheck:
         if not path.exists(img_path):
             album_id = str(get_album_id(id))
             img_path = path.join(getcwd(),"data","album_img",album_id+".jpeg")
+        if not path.exists(img_path):
+            img_path = path.join(getcwd(),"data","album_img","tl.jpeg")
         with open(img_path,"rb")as f:
             img_byte = f.read()
         response = make_response(img_byte)

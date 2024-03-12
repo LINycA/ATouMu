@@ -1,26 +1,28 @@
 import json
 from traceback import format_exc
-import re
 
 from loguru import logger
 from flask import Flask,request
 
 from const import *
-from middlewars import check_sys_init,check_sys_init_wrap,RequestParamsCheck
+from middlewars import check_sys_init,check_sys_init_wrap,RequestParamsCheck,log_request_info
 
 
 dispatcher = RequestParamsCheck()
 
 app = Flask(__name__)
 
+
 # index页面，后期考虑改其他用途或删除
 @app.get("/index")
+@log_request_info
 @check_sys_init_wrap
 def index():
     res = {"ret":200,"msg":"你好"}
-    return res
+    return trans_res(res)
 
 # 系统初始化接口
+@log_request_info
 @app.route("/sys_init",methods=["POST"])
 def sys_init():
     try:
@@ -47,6 +49,7 @@ def Keepalive():
 
 # 用户登陆接口
 @app.post("/auth/login")
+@log_request_info
 @check_sys_init_wrap
 def Login():
     try:
@@ -60,6 +63,7 @@ def Login():
     
 # rest接口
 @app.route("/rest/<action>",methods=["GET","POST"])
+@log_request_info
 @check_sys_init_wrap
 def Rest(action):
     token = request.headers.get("Authorization") if request.headers.get("Authorization") else request.headers.get("X-Nd-Authorization")
@@ -78,6 +82,13 @@ def Rest(action):
         # 专辑封面
         elif action == "getCoverArt":
             res = dispatcher.cover_art_params(data=data)
+            return res
+        # 获取艺术家详细信息接口
+        elif action == "getArtistInfo":
+            data.update({
+                "artist_id":request.args.get("id")
+            })
+            res = dispatcher.artist_info_params(data=data)
             return res
         # 获取歌手播放量高的歌曲
         elif action == "getTopSongs":
@@ -119,6 +130,7 @@ def Rest(action):
 
 # 获取歌曲详细信息
 @app.route("/api/song/<action>")
+@log_request_info
 @check_sys_init_wrap
 def api_song(action):
     print("song_action",action)
@@ -133,6 +145,7 @@ def api_song(action):
 
 # 歌单接口歌曲拓展
 @app.route("/api/playlist/<pid>/tracks",methods=["GET","POST","DELETE"])
+@log_request_info
 @check_sys_init_wrap
 def api_playlist(pid):
     token = request.headers.get("Authorization") if request.headers.get("Authorization") else request.headers.get("X-Nd-Authorization")
@@ -170,6 +183,7 @@ def api_playlist(pid):
 
 # 歌单接口歌单删除拓展
 @app.route("/api/playlist/<pid>",methods=["DELETE"])
+@log_request_info
 @check_sys_init_wrap
 def api_playlist_delete(pid:str):
     token = request.headers.get("Authorization") if request.headers.get("Authorization") else request.headers.get("X-Nd-Authorization")
@@ -189,6 +203,7 @@ def api_playlist_delete(pid:str):
 
 # api接口
 @app.route("/api/<action>",methods=["GET","POST"])
+@log_request_info
 @check_sys_init_wrap
 def Api(action):
     token = request.headers.get("Authorization") if request.headers.get("Authorization") else request.headers.get("X-Nd-Authorization")
@@ -205,41 +220,57 @@ def Api(action):
                 return PARAMS_ERROR
         # 艺术家接口
         elif action == "artist":
-            data.update({
-                "limit":int(request.args.get("_end")),
-                "offset":int(request.args.get("_start")),
-                "sort":request.args.get("_sort"),
-                "order":request.args.get("_order"),
-                "name":request.args.get("name")
-            })
-            res = dispatcher.artist_params(data=data)
-            return res
+            try:
+                data.update({
+                    "limit":int(request.args.get("_end")),
+                    "offset":int(request.args.get("_start")),
+                    "sort":request.args.get("_sort"),
+                    "order":request.args.get("_order"),
+                    "name":request.args.get("name")
+                })
+                res = dispatcher.artist_params(data=data)
+                return res
+            except:
+                logger.error(format_exc())
+                return PARAMS_ERROR
         # 专辑接口
         elif action == "album":
-            data.update({
-                        "limit":int(request.args.get("_end")),
-                        "offset":int(request.args.get("_start")),
-                        "sort":request.args.get("_sort"),
-                        "order":request.args.get("_order"),
-                        "name":request.args.get("name")
-                    })
-            res = dispatcher.album_params(data=data)
-            return res
+            try:
+                data.update({
+                            "limit":int(request.args.get("_end")),
+                            "offset":int(request.args.get("_start")),
+                            "sort":request.args.get("_sort"),
+                            "order":request.args.get("_order"),
+                            "name":request.args.get("name")
+                        })
+                res = dispatcher.album_params(data=data)
+                return res
+            except:
+                logger.error(format_exc())
+                return PARAMS_ERROR
         # 歌曲信息接口
         elif action == "song":
-            data.update({
-                "limit":int(request.args.get("_end")),
-                "offset":int(request.args.get("_start")),
-                "sort":request.args.get("_sort"),
-                "order":request.args.get("_order"),
-                "title":request.args.get("title")
-            })
-            res = dispatcher.songs_params(data=data)
-            return res
+            try:
+                data.update({
+                    "limit":int(request.args.get("_end")),
+                    "offset":int(request.args.get("_start")),
+                    "sort":request.args.get("_sort"),
+                    "order":request.args.get("_order"),
+                    "title":request.args.get("title")
+                })
+                res = dispatcher.songs_params(data=data)
+                return res
+            except:
+                logger.error(format_exc())
+                return PARAMS_ERROR
         # 音乐信息刮削接口
         elif action == "info_completion":
-            res = dispatcher.completion_params(data=data)
-            return res
+            try:
+                res = dispatcher.completion_params(data=data)
+                return res
+            except:
+                logger.error(format_exc())
+                return PARAMS_ERROR
         # 用户注册接口
         elif action == "register":
             try:
@@ -251,8 +282,12 @@ def Api(action):
                 return PARAMS_ERROR
         # 文件扫描接口
         elif action == "scan":
-            res = dispatcher.scan_params(data=data)
-            return res
+            try:
+                res = dispatcher.scan_params(data=data)
+                return res
+            except:
+                logger.error(format_exc())
+                return PARAMS_ERROR
         # 系统设置接口
         elif action == "settings":
             try:
@@ -275,30 +310,34 @@ def Api(action):
                 return PARAMS_ERROR
         # 歌单接口
         elif action == "playlist":
-            method = request.method
-            data.update({"method":method})
-            if method == "POST":
-                try:
-                    postdata = json.loads(request.data)
-                    data.update(postdata)
-                    res = dispatcher.playlist_params(data=data)
-                    return res
-                except:
-                    logger.error(format_exc())
-                    return PARAMS_ERROR
-            elif method == "GET":
-                try:
-                    data.update({
-                        "offset":request.args.get("_start"),
-                        "limit":request.args.get("_end"),
-                        "order_by":request.args.get("_sort")
-                        })
-                    res = dispatcher.playlist_params(data=data)
-                    return res
-                except:
-                    logger.error(format_exc())
-                    return PARAMS_ERROR
-
+            try:
+                method = request.method
+                data.update({"method":method})
+                if method == "POST":
+                    try:
+                        postdata = json.loads(request.data)
+                        data.update(postdata)
+                        res = dispatcher.playlist_params(data=data)
+                        return res
+                    except:
+                        logger.error(format_exc())
+                        return PARAMS_ERROR
+                elif method == "GET":
+                    try:
+                        data.update({
+                            "offset":request.args.get("_start"),
+                            "limit":request.args.get("_end"),
+                            "order_by":request.args.get("_sort")
+                            })
+                        res = dispatcher.playlist_params(data=data)
+                        return res
+                    except:
+                        logger.error(format_exc())
+                        return PARAMS_ERROR
+            except:
+                logger.error(format_exc())
+                return PARAMS_ERROR
+        # 找不到则报错
         logger.warning("action:  "+action+"  未找到功能")
         return PARAMS_ERROR
     except:

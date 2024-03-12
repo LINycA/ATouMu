@@ -44,15 +44,15 @@ class FileScan:
         sql_con = Sqlite_con()
 
         # 写入数据库
-        def insert2db(media_id:str,file_path:str,title:str,album:str,album_id:str,artist:str,artist_id:str,has_cover_art:bool,size:int,suffix:str,duration:float,bitrate:int,full_text:str,channels:int,lrc_path:str):
+        def insert2db(media_id:str,file_path:str,title:str,album:str,album_id:str,artist:str,artist_id:str,has_cover_art:bool,size:int,suffix:str,duration:float,bitrate:int,full_text:str,channels:int,lrc_path:str,image_path:str):
             curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             try:
                 media_sql = f"""insert or ignore into media_file
                 (id,path,title,album,album_id,artist,artist_id,album_artist,has_cover_art,size,suffix,duration,bit_rate,created_at,updated_at,full_text,album_artist_id,order_album_name,
-                order_album_artist_name,order_artist_name,lyrics,channels,order_title,rg_album_gain,rg_album_peak,rg_track_gain,rg_track_peak) 
+                order_album_artist_name,order_artist_name,lyrics,channels,order_title,rg_album_gain,rg_album_peak,rg_track_gain,rg_track_peak,image_path)
                 values
                 ("{media_id}","{file_path}","{title}","{album}","{album_id}","{artist}","{artist_id}","{artist}",{has_cover_art},"{size}","{suffix}","{duration}",
-                {bitrate},"{curdate}","{curdate}","{full_text}","{artist_id}","{album}","{artist}","{artist}","{lrc_path}","{channels}","{title}",0,1,0,1);"""
+                {bitrate},"{curdate}","{curdate}","{full_text}","{artist_id}","{album}","{artist}","{artist}","{lrc_path}","{channels}","{title}",0,1,0,1,"{image_path}");"""
                 sql_con.sql2commit(media_sql)
             except:
                 logger.error(format_exc())
@@ -104,20 +104,20 @@ class FileScan:
             has_cover_art = False
             if jpeg:
                 has_cover_art = True
-            lrc_path = ""
-            lrc_path = path.join(lrc_root_path,media_id+".lrc")
-            if not path.exists(lrc_path):
+            lrc_path = None
+            album_img_path = None
+            if lrc:
+                lrc_path = path.join(lrc_root_path,media_id+".lrc")
                 with open(lrc_path,"w",encoding="utf-8")as f:
                     f.write(lrc)
-            album_img_path = ""
-            if jpeg is not None:
+            if jpeg:
                 album_img_path = path.join(album_img_root_path,album_id+".jpeg")
                 if not path.exists(album_img_path):
                     with open(album_img_path,"wb")as f:
                         f.write(jpeg)
             full_text = " ".join([artist,album,title])
             insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=artist,artist_id=artist_id,
-                      has_cover_art=has_cover_art,size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=full_text,channels=channels,lrc_path=lrc_path)
+                      has_cover_art=has_cover_art,size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=full_text,channels=channels,lrc_path=lrc_path,image_path=album_img_path)
             
         # flac文件信息提取
         def flac_info_extract(file_path:str):
@@ -137,6 +137,8 @@ class FileScan:
             has_cover_art = False
             artist = self.unkown_artist
             artist_id = self.unkown_artist_id
+            lrc_path = None
+            img_path = None
             if artist_info:
                 artist = artist_info[0]
                 artist_id = md5(artist.encode()).hexdigest()
@@ -152,7 +154,7 @@ class FileScan:
             if album is None:
                 logger.warning(file_path+"缺少专辑名称")
             insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=artist,artist_id=artist_id,has_cover_art=has_cover_art,
-                      size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=self.unkown_artist,channels=channels,lrc_path="")
+                      size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=self.unkown_artist,channels=channels,lrc_path=lrc_path,image_path=img_path)
             
         # 文件扫描
         try:

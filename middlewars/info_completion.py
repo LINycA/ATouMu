@@ -52,7 +52,8 @@ class InfoCompletion:
     # 匹配歌曲基础信息
     def search_song_info(self,info_list:list):
         sql_con = Sqlite_con()
-        def match_music_info(info:dict,res:dict):
+        # 根据歌曲名称，歌曲专辑匹配歌曲信息
+        def match_music_info_by_title_album(info:dict,res:dict):
             try:
                 mid = info.get("id")
                 album_id = info.get("album_id")
@@ -91,7 +92,44 @@ class InfoCompletion:
                     logger.warning(mid+"  "+title+" not match")
             except:
                 logger.error(format_exc())
-        # sem = asyncio.Semaphore(5)
+        # 根据歌曲名称，歌曲作者匹配歌曲信息
+        def match_music_info_by_title_artist(info:dict,res:dict):
+            try:
+                mid = info.get("id")
+                artist_id = info.get("artist_id")
+                title = info.get("title")
+                arname = str(info.get("artist_name")).lower()
+                pic_url = None
+                for n in res.get("result").get("songs"):
+                    name = n.get("name")
+                    ar_name = n.get("ar")[0].get("name").lower()
+                    if title != name:
+                        continue
+                    al = n.get("al")
+                    alname = al.get("name").lower()
+                    if ar_name not in arname:
+                        continue
+                    pic_url = al.get("picUrl")
+                    publish_time = int(n.get("publishTime"))/1000
+                    publish_time_str = datetime.fromtimestamp(publish_time).strftime("%Y-%m-%d %H:%M:%S")
+                    netease_id = n.get("id")
+                    break
+                if pic_url:
+                    album_id = md5(alname.encode()).hexdigest()
+                    print(pic_url)
+                    img_path = self.save_img(album_id,pic_url)
+                    lrc_path = self.save_lyric(mid,netease_id=netease_id)
+                    curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    full_text = ar_name+"  "+album
+                    # 更新媒体，歌手，专辑表
+                    media_sql = f'update media_file set netease_id="{netease_id}",album="{alname}",album_id="{album_id}",order_album_name="{alname}",image_path="{img_path}",lyrics="{lrc_path}",updated_at="{curdate}" where id="{mid}";'
+                    album_sql = f'insert or ignore into album(id,name,artist_id,artist,album_artist,updated_at,full_text,order_album_name,order_album_artist_name,all_artist_ids,external_info_updated_at) values("{album_id}","{alname}","{artist_id}","{ar_name}","{ar_name}","{curdate}","{full_text}","{alname}","{ar_name}","{artist_id}","{curdate}");'
+                    sql_con.sql2commit(album_sql)
+                    sql_con.sql2commit(media_sql)
+                else:
+                    logger.warning(mid+"  "+title+" not match")
+            except:
+                logger.error(format_exc())
         while info_list:
             info_list_cp = info_list.copy()
             loop = asyncio.new_event_loop()
@@ -107,7 +145,8 @@ class InfoCompletion:
             for r in tasks:
                 info,res = r.result()
                 try:
-                    match_music_info(info=info,res=res.json())
+                    match_music_info_by_title_album(info=info,res=res.json())
+                    match_music_info_by_title_artist(info=info,res=res.json())
                 except:
                     logger.error(format_exc())
     # 歌曲信息回放至文件
@@ -181,11 +220,11 @@ class InfoCompletion:
         logger.info("信息收集开始")
         try:
             sql_con = Sqlite_con()
-            get_lack_info_sql = 'select id,album_id,title,artist,album from media_file where artist = "" or lyrics = "";'
+            get_lack_info_sql = 'select id,album_id,title,artist,album,artist,artist_id from media_file where artist = "none" or lyrics = "None" or image_path = "None" or album = "none";'
             res = sql_con.sql2commit(get_lack_info_sql)
             need_completion_info_list = []
             for i in res:
-                need_completion_info_list.append({"id":i[0],"album_id":i[1],"title":i[2],"artist_name":i[3],"album":i[4]})
+                need_completion_info_list.append({"id":i[0],"album_id":i[1],"title":i[2],"artist_name":i[3],"album":i[4],"artist":i[5],"artist_id":i[6]})
             self.search_song_info(need_completion_info_list)
             calculation_table_info()
             # 信息回放至文件

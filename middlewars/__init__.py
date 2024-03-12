@@ -1,5 +1,5 @@
 from .sqlite_init import SqliteInit
-from .check_sys_init import check_sys_init,check_sys_init_wrap
+from .check_sys_init import check_sys_init,check_sys_init_wrap,log_request_info
 from .sys_init import SysInit
 from .verify_code import VerifyCode
 from .email_send import Email

@@ -8,17 +8,21 @@ from const import *
 
 
 class Artist:
+    # 获取所有歌手信息
     def get_all_artist(self,user_id:str,page:int,limit:int,order_by:str,order:str,name:str) -> Response:
         if type(page) is not int or type(limit) is not int:
             return PARAMS_ERROR
         order_keys = ["ASC","DESC"]
         if order not in order_keys:
             return PARAMS_ERROR
+        order_by_keys = ["album_count","genre","id","song_count","size","name"]
+        if order_by not in order_by_keys:
+            return PARAMS_ERROR
         sql_con = Sqlite_con()
         filter_name = ""
         if name:
             filter_name = f"""where name like "%{name}%" """
-        sql = f'select album_count,external_info_updated_at,full_text,id,name,order_artist_name,size,song_count from artist {filter_name} order by {order_by};'
+        sql = f'select album_count,external_info_updated_at,full_text,id,name,order_artist_name,size,song_count from artist {filter_name} order by {order_by} {order};'
         curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         res = sql_con.sql2commit(sql=sql)
         res_dic = [{
@@ -57,3 +61,21 @@ class Artist:
         response.headers["permissions-policy"] = "autoplay=(), camera=(), microphone=(), usb=()"
         response.headers["x-content-type-options"] = "nosniff"
         return response
+    
+    # 获取歌手详细信息(目前只有图片信息)
+    def get_artist_info(self,id:str,host:str) -> Response:
+
+        res_dict = {
+            "subsonic-response": {
+                "status": "ok",
+                "version": "1.16.1",
+                "type": "navidrome",
+                "serverVersion": "0.49.3 (8b93962f)",
+                "artistInfo": {
+                    "smallImageUrl": "http://localhost:4533/share/img/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFyLWM2YjA4ZmU4OTE2ZTk1YjRkMGNkODVhMDNhNjZmYTBiXzAiLCJpc3MiOiJORCJ9.h77QenBGn0HaVf5PtDJKyZW6jMlT1hzmiQF2fYoSJZo?size=150",
+                    "mediumImageUrl": "http://localhost:4533/share/img/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFyLWM2YjA4ZmU4OTE2ZTk1YjRkMGNkODVhMDNhNjZmYTBiXzAiLCJpc3MiOiJORCJ9.h77QenBGn0HaVf5PtDJKyZW6jMlT1hzmiQF2fYoSJZo?size=300",
+                    "largeImageUrl": "http://localhost:4533/share/img/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFyLWM2YjA4ZmU4OTE2ZTk1YjRkMGNkODVhMDNhNjZmYTBiXzAiLCJpc3MiOiJORCJ9.h77QenBGn0HaVf5PtDJKyZW6jMlT1hzmiQF2fYoSJZo?size=600"
+                }
+            }
+        }
+        return trans_res(res_dict)
