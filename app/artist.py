@@ -64,7 +64,7 @@ class Artist:
     
     # 获取歌手详细信息(目前只有图片信息)
     def get_artist_info(self,id:str,host:str) -> Response:
-
+        img_path = f"http://{host}/share/img/{id}"
         res_dict = {
             "subsonic-response": {
                 "status": "ok",
@@ -72,9 +72,9 @@ class Artist:
                 "type": "navidrome",
                 "serverVersion": "0.49.3 (8b93962f)",
                 "artistInfo": {
-                    "smallImageUrl": "http://localhost:4533/share/img/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFyLWM2YjA4ZmU4OTE2ZTk1YjRkMGNkODVhMDNhNjZmYTBiXzAiLCJpc3MiOiJORCJ9.h77QenBGn0HaVf5PtDJKyZW6jMlT1hzmiQF2fYoSJZo?size=150",
-                    "mediumImageUrl": "http://localhost:4533/share/img/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFyLWM2YjA4ZmU4OTE2ZTk1YjRkMGNkODVhMDNhNjZmYTBiXzAiLCJpc3MiOiJORCJ9.h77QenBGn0HaVf5PtDJKyZW6jMlT1hzmiQF2fYoSJZo?size=300",
-                    "largeImageUrl": "http://localhost:4533/share/img/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFyLWM2YjA4ZmU4OTE2ZTk1YjRkMGNkODVhMDNhNjZmYTBiXzAiLCJpc3MiOiJORCJ9.h77QenBGn0HaVf5PtDJKyZW6jMlT1hzmiQF2fYoSJZo?size=600"
+                    "smallImageUrl": img_path,
+                    "mediumImageUrl": img_path,
+                    "largeImageUrl": img_path
                 }
             }
         }

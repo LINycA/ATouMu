@@ -204,7 +204,8 @@ class SqliteInit:
         order_title varchar null collate NOCASE, 
         mbz_release_track_id varchar(255), rg_album_gain real, 
         rg_album_peak real, rg_track_gain real, rg_track_peak real,
-        primary key(id));
+        primary key(id),
+        unique(path));
         """
         con.sql2commit(media_table_sql)
 

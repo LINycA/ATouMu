@@ -16,21 +16,6 @@ def check_sys_init():
     else:
         return False
 
-# 打印访问地址（来访）
-def log_request_info(func):
-    @functools.wraps(func)
-    def log_wraps(*args,**kwargs):
-        curdate = datetime.now().strftime("%Y-%m-%d")
-        logger.add(path.join(getcwd(),"log","route_"+curdate+".log"))
-        info = f"""
-        {request.headers.get("X-Forwarded-For")}  ------>  {request.path}
-        访问域名  ------>  {request.headers.get("Host")}
-        访问地址  ------>  {request.full_path}
-        访问方式  ------>  {request.method}
-        """
-        logger.info(info)
-        return func(*args,**kwargs)
-    return log_wraps
 
 # 检测系统是否初始化
 def check_sys_init_wrap(func):

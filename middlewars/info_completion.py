@@ -1,11 +1,12 @@
 import asyncio
 import time
-from os import path,getcwd,listdir
+from os import path,getcwd
 from base64 import b64encode
 from traceback import format_exc
 from datetime import datetime
 from threading import Thread
 from hashlib import md5
+from parsel import Selector
 
 import httpx
 from mutagen import mp3,flac,id3
@@ -49,6 +50,18 @@ class InfoCompletion:
             f.write(lrc)
         logger.warning(lrc_name+"  歌词写入")
         return lrc_path
+    
+    # 获取歌手图片url
+    def get_artist_img_url(self,artist_id:str) -> str:
+        url = f"https://music.163.com/artist?id={artist_id}"
+        headers = {
+            "user-agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+        }
+        res = get(url=url,headers=headers)
+        html = Selector(res.text)
+        img_path = html.xpath('//*[@class="n-artist f-cb"]/img/@src')
+        img_url = img_path.extract_first()
+        return img_url
     # 匹配歌曲基础信息
     def search_song_info(self,info_list:list):
         sql_con = Sqlite_con()
@@ -64,10 +77,12 @@ class InfoCompletion:
                 for n in res.get("result").get("songs"):
                     name = n.get("name")
                     ar_name = n.get("ar")[0].get("name").lower()
+                    ar_netease_id = n.get("ar")[0].get("id")
                     if title != name:
                         continue
                     al = n.get("al")
                     alname = al.get("name").lower()
+                    al_netease_id = al.get("id")
                     if ar_name not in arname and alname not in album:
                         continue
                     pic_url = al.get("picUrl")
@@ -76,15 +91,17 @@ class InfoCompletion:
                     netease_id = n.get("id")
                     break
                 if pic_url:
+                    artist_id = md5(ar_name.encode()).hexdigest()
                     img_path = self.save_img(album_id,pic_url)
                     lrc_path = self.save_lyric(mid,netease_id=netease_id)
+                    artist_img_url = self.get_artist_img_url(artist_id=ar_netease_id)
+                    self.save_img(artist_id,artist_img_url)
                     curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     full_text = ar_name+"  "+album
-                    artist_id = md5(ar_name.encode()).hexdigest()
                     # 更新媒体，歌手，专辑表
                     media_sql = f'update media_file set netease_id="{netease_id}",artist="{ar_name}",artist_id="{artist_id}",album_artist="{ar_name}",album_artist_id="{artist_id}",order_album_artist_name="{ar_name}",order_artist_name="{ar_name}",image_path="{img_path}",lyrics="{lrc_path}",updated_at="{curdate}" where id="{mid}";'
-                    album_sql = f'update album set artist_id="{artist_id}",album_artist="{ar_name}",album_artist_id="{artist_id}",order_album_artist_name="{ar_name}",all_artist_ids="{artist_id}" where id="{album_id}";'
-                    artist_sql = f'insert or ignore into artist(id,name,full_text,order_artist_name) values("{artist_id}","{ar_name}","{full_text}","{ar_name}");'
+                    album_sql = f'update album set artist_id="{artist_id}",netease_id="{al_netease_id}",album_artist="{ar_name}",album_artist_id="{artist_id}",order_album_artist_name="{ar_name}",all_artist_ids="{artist_id}" where id="{album_id}";'
+                    artist_sql = f'insert or ignore into artist(id,netease_id,name,full_text,order_artist_name) values("{artist_id}","{ar_netease_id}","{ar_name}","{full_text}","{ar_name}");'
                     sql_con.sql2commit(artist_sql)
                     sql_con.sql2commit(album_sql)
                     sql_con.sql2commit(media_sql)
@@ -103,10 +120,12 @@ class InfoCompletion:
                 for n in res.get("result").get("songs"):
                     name = n.get("name")
                     ar_name = n.get("ar")[0].get("name").lower()
+                    ar_netease_id = n.get("ar")[0].get("id")
                     if title != name:
                         continue
                     al = n.get("al")
                     alname = al.get("name").lower()
+                    al_netease_id = al.get("id")
                     if ar_name not in arname:
                         continue
                     pic_url = al.get("picUrl")
@@ -116,16 +135,19 @@ class InfoCompletion:
                     break
                 if pic_url:
                     album_id = md5(alname.encode()).hexdigest()
-                    print(pic_url)
                     img_path = self.save_img(album_id,pic_url)
+                    artist_img_url = self.get_artist_img_url(artist_id=ar_netease_id)
+                    self.save_img(artist_id,artist_img_url)
                     lrc_path = self.save_lyric(mid,netease_id=netease_id)
                     curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     full_text = ar_name+"  "+album
                     # 更新媒体，歌手，专辑表
                     media_sql = f'update media_file set netease_id="{netease_id}",album="{alname}",album_id="{album_id}",order_album_name="{alname}",image_path="{img_path}",lyrics="{lrc_path}",updated_at="{curdate}" where id="{mid}";'
-                    album_sql = f'insert or ignore into album(id,name,artist_id,artist,album_artist,updated_at,full_text,order_album_name,order_album_artist_name,all_artist_ids,external_info_updated_at) values("{album_id}","{alname}","{artist_id}","{ar_name}","{ar_name}","{curdate}","{full_text}","{alname}","{ar_name}","{artist_id}","{curdate}");'
+                    album_sql = f'insert or ignore into album(id,netease_id,name,artist_id,artist,album_artist,updated_at,full_text,order_album_name,order_album_artist_name,all_artist_ids,external_info_updated_at) values("{album_id}","{al_netease_id}","{alname}","{artist_id}","{ar_name}","{ar_name}","{curdate}","{full_text}","{alname}","{ar_name}","{artist_id}","{curdate}");'
+                    artist_sql = f'update artist set netease_id="{ar_netease_id}" where id="{artist_id}";'
                     sql_con.sql2commit(album_sql)
                     sql_con.sql2commit(media_sql)
+                    sql_con.sql2commit(artist_sql)
                 else:
                     logger.warning(mid+"  "+title+" not match")
             except:
@@ -138,8 +160,9 @@ class InfoCompletion:
             for i in info_list_cp[:50]:
                 info_list.remove(i)
                 title = i.get("title")
-                album = i.get("album")
-                url = self.base_url + f"/cloudsearch?keywords={title} {album}&offset=0&limit=100"
+                album = i.get("album").replace("none","")
+                artist = i.get("artist").replace("none","")
+                url = self.base_url + f"/cloudsearch?keywords={title} {album} {artist}&offset=0&limit=100"
                 tasks.append(asyncio.ensure_future(self.get_info(info=i,url=url)))
             loop.run_until_complete(asyncio.wait(tasks))
             for r in tasks:

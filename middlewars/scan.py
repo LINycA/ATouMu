@@ -47,7 +47,7 @@ class FileScan:
         def insert2db(media_id:str,file_path:str,title:str,album:str,album_id:str,artist:str,artist_id:str,has_cover_art:bool,size:int,suffix:str,duration:float,bitrate:int,full_text:str,channels:int,lrc_path:str,image_path:str):
             curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             try:
-                media_sql = f"""insert or ignore into media_file
+                media_sql = f"""insert or replace into media_file
                 (id,path,title,album,album_id,artist,artist_id,album_artist,has_cover_art,size,suffix,duration,bit_rate,created_at,updated_at,full_text,album_artist_id,order_album_name,
                 order_album_artist_name,order_artist_name,lyrics,channels,order_title,rg_album_gain,rg_album_peak,rg_track_gain,rg_track_peak,image_path)
                 values

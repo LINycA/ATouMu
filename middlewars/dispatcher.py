@@ -362,16 +362,21 @@ class RequestParamsCheck:
     @subsonic_token_check_wrap
     def artist_info_params(self,data:dict) -> Response:
         artist_id = data.get("artist_id")
+        host = data.get("host")
+        res = Artist().get_artist_info(id=artist_id,host=host)
+        return res
+
+    # 获取艺术家图片
+    def share_img_params(self,data:dict) -> Response:
+        artist_id = data.get("artist_id")
         img_path = path.join(getcwd(),"data","artist_img",artist_id+".jpeg")
-        if path.exists(img_path):
-            with open(img_path,"rb")as f:
-                content = f.read()
-            res = make_response(content)
-            res.headers["Content-Type"] = "image/jpeg"
-            return res
-        else:
-            logger.warning(img_path+"  文件找不到")
-            return PARAMS_ERROR
+        if not path.exists(img_path):
+            img_path = path.join(getcwd(),"data","artist_img","tl.jpeg")
+        with open(img_path,"rb")as f:
+            img_content = f.read()
+        response = make_response(img_content)
+        response.headers["Content-Type"] = "image/jpeg"
+        return response
 
     # 获取相似歌曲
     @subsonic_token_check_wrap
@@ -400,7 +405,7 @@ class RequestParamsCheck:
         user_id = data.get("user_id")
         return Songs().scrobble_songs(f_time=f_time,media_id=media_id,username=username)
 
-    # 获取专辑封面
+    # 获取专辑封面、歌曲图片、歌手图片
     @subsonic_token_check_wrap
     def cover_art_params(self,data:dict) -> Response:
         sql_con = Sqlite_con()

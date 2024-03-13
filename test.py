@@ -1,15 +1,11 @@
-from os import getcwd,path,listdir
+import requests
 
-from mutagen import mp3,flac,id3
 
-file_list = [path.join(getcwd(),i) for i in listdir(getcwd())]
+url = "https://compass.jinritemai.com/compass_api/author/live/live_room_detail/flow/trend_analysis_v2?index_selected=watch_ucnt&trend_gap=minute&live_room_id=7345360503415376691&X-Bogus=DFSzsdVuhCvANSvEtLIdAZHGDJ4d"
+headers = {
+    "user-agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+    "cookie":"LUOPAN_DT=session_7340163080334098740; domain=compass.jinritemai.com; path=/; secure; SameSite=None"
+}
 
-for i in file_list:
-    if path.isdir(i):
-        for n in listdir(i):
-            file_list.append(path.join(i,n))
-    else:
-        if "flac" in i:
-            print(i)
-            info = flac.FLAC(i)
-            print(info["lrc"])
+res = requests.get(url=url,headers=headers)
+print(res.text)
