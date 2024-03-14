@@ -18,7 +18,8 @@ class RequestParamsCheck:
     def __init__(self):
         self.email = Email()
         file_scan = FileScan()
-        file_scan.start_scan()  # 后端启动就开始扫描文件
+        if YamlConfig().check_sys_init():
+            file_scan.start_scan()  # 后端启动就开始扫描文件
         file_scan.regular_time_scan() # 定时扫描文件变化
         InfoCompletion().regular_start_completion() # 定时刮削音乐信息，定时暂不可修改
 

@@ -36,7 +36,6 @@ class FileScan:
         self._dir_init()
         curdate = datetime.now().strftime("%Y-%m-%d")
         logger.add(path.join(getcwd(),"log",f"file_scan_{curdate}.log"))
-        logger.info("扫描开始")
         yaml_conf = YamlConfig()
         media_path = yaml_conf.media_path_conf()
         lrc_root_path = path.join(getcwd(),"data","lrcs")
