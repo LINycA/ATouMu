@@ -21,6 +21,7 @@ from const import *
 class InfoCompletion:
     def __init__(self):
         self.base_url = "http://git.znana.top:4000"
+        self.lack_info_list = []
     
     # 异步请求
     async def get_info(self,info:dict,url:str):
@@ -109,69 +110,7 @@ class InfoCompletion:
                     logger.warning(mid+"  "+title+" not match")
             except:
                 logger.error(format_exc())
-        # 根据歌曲名称，歌曲作者匹配歌曲信息
-        def match_music_info_by_title_artist(info:dict,res:dict):
-            try:
-                mid = info.get("id")
-                artist_id = info.get("artist_id")
-                title = info.get("title")
-                arname = str(info.get("artist_name")).lower()
-                pic_url = None
-                for n in res.get("result").get("songs"):
-                    name = n.get("name")
-                    ar_name = n.get("ar")[0].get("name").lower()
-                    ar_netease_id = n.get("ar")[0].get("id")
-                    if title != name:
-                        continue
-                    al = n.get("al")
-                    alname = al.get("name").lower()
-                    al_netease_id = al.get("id")
-                    if ar_name not in arname:
-                        continue
-                    pic_url = al.get("picUrl")
-                    publish_time = int(n.get("publishTime"))/1000
-                    publish_time_str = datetime.fromtimestamp(publish_time).strftime("%Y-%m-%d %H:%M:%S")
-                    netease_id = n.get("id")
-                    break
-                if pic_url:
-                    album_id = md5(alname.encode()).hexdigest()
-                    img_path = self.save_img(album_id,pic_url)
-                    artist_img_url = self.get_artist_img_url(artist_id=ar_netease_id)
-                    self.save_img(artist_id,artist_img_url)
-                    lrc_path = self.save_lyric(mid,netease_id=netease_id)
-                    curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    full_text = ar_name+"  "+album
-                    # 更新媒体，歌手，专辑表
-                    media_sql = f'update media_file set netease_id="{netease_id}",album="{alname}",album_id="{album_id}",order_album_name="{alname}",image_path="{img_path}",lyrics="{lrc_path}",updated_at="{curdate}" where id="{mid}";'
-                    album_sql = f'insert or ignore into album(id,netease_id,name,artist_id,artist,album_artist,updated_at,full_text,order_album_name,order_album_artist_name,all_artist_ids,external_info_updated_at) values("{album_id}","{al_netease_id}","{alname}","{artist_id}","{ar_name}","{ar_name}","{curdate}","{full_text}","{alname}","{ar_name}","{artist_id}","{curdate}");'
-                    artist_sql = f'update artist set netease_id="{ar_netease_id}" where id="{artist_id}";'
-                    sql_con.sql2commit(album_sql)
-                    sql_con.sql2commit(media_sql)
-                    sql_con.sql2commit(artist_sql)
-                else:
-                    logger.warning(mid+"  "+title+" not match")
-            except:
-                logger.error(format_exc())
-        while info_list:
-            info_list_cp = info_list.copy()
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            tasks = []
-            for i in info_list_cp[:50]:
-                info_list.remove(i)
-                title = i.get("title")
-                album = i.get("album").replace("none","")
-                artist = i.get("artist").replace("none","")
-                url = self.base_url + f"/cloudsearch?keywords={title} {album} {artist}&offset=0&limit=100"
-                tasks.append(asyncio.ensure_future(self.get_info(info=i,url=url)))
-            loop.run_until_complete(asyncio.wait(tasks))
-            for r in tasks:
-                info,res = r.result()
-                try:
-                    match_music_info_by_title_album(info=info,res=res.json())
-                    match_music_info_by_title_artist(info=info,res=res.json())
-                except:
-                    logger.error(format_exc())
+        
     # 歌曲信息回放至文件
     def info_back2file(self):
         # mp3信息回存
@@ -236,25 +175,58 @@ class InfoCompletion:
             elif suffix == "flac":
                 flac_info_save(path_f=i["path"],album_id=i["album_id"],mid=i["id"],title=i["title"],album=i["album"],artist=i["artist"])
                 
+    def _completion_artist(self):
+        def math_artist(res:dict,info:dict) -> bool:
+            mid = info.get("mid")
+            title = info.get("title")
+            album = info.get("album")
+            album_id = info.get("album_id")
+            songs = res.get("result").get("songs")
+            for i in songs:
+                m_net_id = i.get(id)
+                name = i.get("name")
+                al = i.get("al")
+                album_name = al.get("name")
+                album_net_id = al.get("id")
+                pic_url = al.get("picUrl")
+                ar = i.get("ar")[0]
+                artist_name = ar.get("name")
+                artist_net_id = ar.get("id")
+                if title == name and album == album_name:
+                    break
+            
+
+        logger.info("歌手信息收集开始")
+        sql_con = Sqlite_con()
+        artist_lack_sql = f'select id,title,album,album_id from media_file where artist="unkown";'
+        res = sql_con.sql2commit(artist_lack_sql)
+        if res:
+            info_list = [{"mid":i[0],"title":i[1],"album":i[2],"album_id":i[3]}for i in res]
+            
+
     # 音乐信息刮削，目前支持网易云音乐
     def _completion(self):
+        lack_info_sql = f'select id from media_file where artist="unkown" and album="none";'
+        sql_con = Sqlite_con()
+        res = sql_con.sql2commit(lack_info_sql)
+        if res:
+            for i in res:
+                self.lack_info_list.append(i[0])     
         curdate = datetime.now().strftime("%Y-%m-%d")
         logger.add(path.join(getcwd(),"log",f"info_completion_{curdate}.log"))
-        logger.info("信息收集开始")
         try:
-            sql_con = Sqlite_con()
-            get_lack_info_sql = 'select id,album_id,title,artist,album,artist,artist_id from media_file where artist = "none" or lyrics = "None" or image_path = "None" or album = "none";'
-            res = sql_con.sql2commit(get_lack_info_sql)
-            need_completion_info_list = []
-            for i in res:
-                need_completion_info_list.append({"id":i[0],"album_id":i[1],"title":i[2],"artist_name":i[3],"album":i[4],"artist":i[5],"artist_id":i[6]})
-            self.search_song_info(need_completion_info_list)
-            calculation_table_info()
-            # 信息回放至文件
-            self.info_back2file()
+            self._completion_artist()
+        #     res = sql_con.sql2commit(get_lack_info_sql)
+        #     need_completion_info_list = []
+        #     for i in res:
+        #         need_completion_info_list.append({"id":i[0],"album_id":i[1],"title":i[2],"artist_name":i[3],"album":i[4],"artist":i[5],"artist_id":i[6]})
+        #     self.search_song_info(need_completion_info_list)
+        #     calculation_table_info()
+        #     # 信息回放至文件
+        #     self.info_back2file()
         except:
             logger.error(format_exc())
-        logger.success("信息收集结束")
+        # logger.success("信息收集结束")
     # 定时启动刮削系统
     def regular_start_completion(self):
         def start_fun():
