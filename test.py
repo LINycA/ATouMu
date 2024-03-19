@@ -1,8 +1,6 @@
-a = [1,2,3,4,5]
+import fuzzywuzzy
+import fuzzywuzzy.fuzz
 
-for i in a:
-    if 5 == i:
-        print("6")
-        break
-else:
-    print(5)
+
+match_rate = fuzzywuzzy.fuzz.ratio("甜約翰 Sweet John","甜約翰")
+print(match_rate)

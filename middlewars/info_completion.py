@@ -6,11 +6,12 @@ from datetime import datetime
 from threading import Thread
 from hashlib import md5
 from parsel import Selector
+import urllib3
 
-import httpx
 from mutagen import mp3,flac,id3
 from loguru import logger
 from requests import get
+from fuzzywuzzy import fuzz
 
 from utils import Sqlite_con
 from middlewars import calculation_table_info
@@ -21,22 +22,14 @@ class InfoCompletion:
     def __init__(self):
         self.base_url = "http://git.znana.top:4000"
         self.lack_info_list = []
+        urllib3.disable_warnings(urllib3.exceptions.SecurityWarning)
     
-    # 异步请求
-    async def get_info(self,info:dict,url:str):
-        async with httpx.AsyncClient()as cli:
-            try:
-                res = await cli.get(url=url)
-                return info,res
-            except:
-                logger.error(format_exc())
-                return info,None
     # 歌曲照片保存
     def save_img(self,pic_name:str,url:str) -> str:
         img_path = path.join(getcwd(),"data","album_img",pic_name+".jpeg")
         if path.exists(img_path):
             return img_path
-        res = get(url=url)
+        res = get(url=url,verify=False)
         with open(img_path,"wb")as f:
             f.write(res.content)
         return img_path
@@ -62,54 +55,7 @@ class InfoCompletion:
         img_path = html.xpath('//*[@class="n-artist f-cb"]/img/@src')
         img_url = img_path.extract_first()
         return img_url
-    # 匹配歌曲基础信息
-    def search_song_info(self,info_list:list):
-        sql_con = Sqlite_con()
-        # 根据歌曲名称，歌曲专辑匹配歌曲信息
-        def match_music_info_by_title_album(info:dict,res:dict):
-            try:
-                mid = info.get("id")
-                album_id = info.get("album_id")
-                title = info.get("title")
-                album = str(info.get("album")).lower()
-                arname = str(info.get("artist_name")).lower()
-                pic_url = None
-                for n in res.get("result").get("songs"):
-                    name = n.get("name")
-                    ar_name = n.get("ar")[0].get("name").lower()
-                    ar_netease_id = n.get("ar")[0].get("id")
-                    if title != name:
-                        continue
-                    al = n.get("al")
-                    alname = al.get("name").lower()
-                    al_netease_id = al.get("id")
-                    if ar_name not in arname and alname not in album:
-                        continue
-                    pic_url = al.get("picUrl")
-                    publish_time = int(n.get("publishTime"))/1000
-                    publish_time_str = datetime.fromtimestamp(publish_time).strftime("%Y-%m-%d %H:%M:%S")
-                    netease_id = n.get("id")
-                    break
-                if pic_url:
-                    artist_id = md5(ar_name.encode()).hexdigest()
-                    img_path = self.save_img(album_id,pic_url)
-                    lrc_path = self.save_lyric(mid,netease_id=netease_id)
-                    artist_img_url = self.get_artist_img_url(artist_id=ar_netease_id)
-                    self.save_img(artist_id,artist_img_url)
-                    curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    full_text = ar_name+"  "+album
-                    # 更新媒体，歌手，专辑表
-                    media_sql = f'update media_file set netease_id="{netease_id}",artist="{ar_name}",artist_id="{artist_id}",album_artist="{ar_name}",album_artist_id="{artist_id}",order_album_artist_name="{ar_name}",order_artist_name="{ar_name}",image_path="{img_path}",lyrics="{lrc_path}",updated_at="{curdate}" where id="{mid}";'
-                    album_sql = f'update album set artist_id="{artist_id}",netease_id="{al_netease_id}",album_artist="{ar_name}",album_artist_id="{artist_id}",order_album_artist_name="{ar_name}",all_artist_ids="{artist_id}" where id="{album_id}";'
-                    artist_sql = f'insert or ignore into artist(id,netease_id,name,full_text,order_artist_name) values("{artist_id}","{ar_netease_id}","{ar_name}","{full_text}","{ar_name}");'
-                    sql_con.sql2commit(artist_sql)
-                    sql_con.sql2commit(album_sql)
-                    sql_con.sql2commit(media_sql)
-                else:
-                    logger.warning(mid+"  "+title+" not match")
-            except:
-                logger.error(format_exc())
-        
+
     # 歌曲信息回放至文件
     def info_back2file(self):
         # mp3信息回存
@@ -185,7 +131,7 @@ class InfoCompletion:
             if not songs:
                 return match
             for i in songs:
-                m_net_id = i.get(id)
+                m_net_id = i.get('id')
                 name = i.get("name")
                 al = i.get("al")
                 album_name = al.get("name")
@@ -194,7 +140,7 @@ class InfoCompletion:
                 ar = i.get("ar")[0]
                 artist_name = ar.get("name")
                 artist_net_id = ar.get("id")
-                if title == name and album == album_name:
+                if fuzz.ratio(title.lower(),name.lower()) >= 30 and fuzz.ratio(album.lower(),album_name.lower()) >= 30:
                     match = True
                     break
             else:
@@ -213,10 +159,9 @@ class InfoCompletion:
             sql_con.sql2commit(insert_artist_sql)
             return match
         
-
         logger.info("歌手信息收集开始")
         sql_con = Sqlite_con()
-        artist_lack_sql = f'select id,title,album,album_id from media_file where artist="unkown";'
+        artist_lack_sql = f'select id,title,album,album_id from media_file where artist="unkown" and album != "none";'
         res = sql_con.sql2commit(artist_lack_sql)
         if res:
             info_list = [{"mid":i[0],"title":i[1],"album":i[2],"album_id":i[3]}for i in res]
@@ -225,11 +170,10 @@ class InfoCompletion:
                 limit = 100
                 while page < 4:
                     url = self.base_url + f"/cloudsearch?keywords={i.get('title')}  {i.get('album')}&offset={page*limit}&limit={limit}"
-                    print(url)
-                    res = get(url=url)
+                    response = get(url=url)
                     try:
-                        res = res.json()
-                        if match_res := math_artist(res=res,info=i):
+                        response = response.json()
+                        if match_res := math_artist(res=response,info=i):
                             break
                         else:
                             page += 1
@@ -241,6 +185,113 @@ class InfoCompletion:
                         continue
                 if not match_res:
                     logger.warning(str(i)+" not match")
+    # 根据歌曲，歌手名称匹配专辑信息
+    def _completion_album(self):
+        def match_album(res:dict,info:dict) -> bool:
+            mid = info.get("mid")
+            title = info.get("title")
+            artist = info.get("artist")
+            artist_id = info.get("artist_id")
+            songs = res.get('result').get("songs")
+            match = False
+            if not songs:
+                return match
+            for i in songs:
+                m_net_id = i.get("id")
+                name = i.get("name")
+                ar = i.get("ar")
+                if fuzz.ratio(title.lower(),name.lower()) < 30:
+                    continue
+                for ar_i in ar:
+                    ar_name = ar_i.get("name").strip().lower()
+                    ar_net_id = ar_i.get("id")
+                    if fuzz.ratio(ar_name,artist.strip().lower()) >= 30:
+                        match = True
+                        break
+                if match:
+                    break
+            else:
+                return match
+            al = i.get("al")
+            album_name = al.get("name")
+            album_net_id = al.get("id")
+            pic_url = al.get("picUrl")
+            album_id = md5(album_name.encode()).hexdigest()
+            curdate = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            img_path = self.save_img(album_id,pic_url)
+            update_media_sql = f"""update media_file set netease_id="{m_net_id}",album="{album_name}",album_id="{album_id}",order_album_name="{album_name}",image_path="{img_path}" where id="{mid}";"""
+            sql_con.sql2commit(update_media_sql)
+            insert_album_sql = f"""insert or replace into album(id,netease_id,name,artist_id,artist,album_artist,album_artist_id,order_album_name,order_album_artist_name,all_artist_ids,external_info_updated_at)
+                                    values("{album_id}","{album_net_id}","{album_name}","{artist_id}","{artist}","{artist}","{artist_id}","{album_name}","{artist}","{artist_id}","{curdate}");"""
+            sql_con.sql2commit(insert_album_sql)
+            update_artist_sql = f"""update artist set netease_id="{ar_net_id}" where id="{artist_id}";"""
+            sql_con.sql2commit(update_artist_sql)
+            return match
+
+        logger.info("专辑信息收集开始")
+        sql_con = Sqlite_con()
+        album_lack_sql = f'select id,title,artist,artist_id from media_file where album="none" and artist != "unkown";'
+        res = sql_con.sql2commit(album_lack_sql)
+        if res:
+            info_list = [{"mid":i[0],"title":i[1],"artist":i[2],"artist_id":i[3]}for i in res]
+            for i in info_list:
+                page = 0
+                limit = 100
+                while page < 4:
+                    url = self.base_url + f"/cloudsearch?keywords={i.get('title')}  {i.get('artist')}&offset={page*limit}&limit={limit}"
+                    response = get(url=url)
+                    try:
+                        response = response.json()
+                        if match_res := match_album(res=response,info=i):
+                            logger.success(str(i) + "  match success")
+                            break
+                        else:
+                            page += 1
+                            continue
+                    except:
+                        logger.error(format_exc())
+                        continue
+                if not match_res:
+                    logger.warning(str(i) + "  not match")
+    # 匹配歌手信息
+    def _completion_math_artist(self):
+        def match_artist(res:dict,info:dict) -> bool:
+            artist = info.get("artist").strip()
+            artist_id = info.get("artist_id")
+            artist_info = res.get("result")
+            match = False
+            if "artists" not in artist_info:
+                return match
+            artist_info = artist_info.get("artists")
+            for i in artist_info:
+                artist_name = i.get("name").strip().lower()
+                artist_net_id = i.get("id")
+                pic_url = i.get("picUrl")
+                if fuzz.ratio(artist.lower(),artist_name) >= 20:
+                    match = True
+                    break
+            else:
+                return match
+            self.save_img(artist_id,pic_url)
+            update_artist_sql = f"""update artist set netease_id="{artist_net_id}" where id="{artist_id}";"""
+            sql_con.sql2commit(update_artist_sql)
+            return match
+        
+        sql_con = Sqlite_con()
+        get_artist_sql = "select id,name from artist where netease_id is null;"
+        sql_res = [{"artist_id":i[0],"artist":i[1]} for i in sql_con.sql2commit(get_artist_sql)]
+        for i in sql_res:
+            artist = i.get("artist")
+            try:
+                url = self.base_url + f"/cloudsearch?keywords={artist}&type=100"
+                response = get(url=url).json()
+                if match_artist(response,i):
+                    logger.success(str(i)+" artist matched")
+                else:
+                    logger.warning(str(i)+" artist not matched")
+            except:
+                logger.error(format_exc())
+
 
     # 音乐信息刮削，目前支持网易云音乐
     def _completion(self):
@@ -254,17 +305,17 @@ class InfoCompletion:
         logger.add(path.join(getcwd(),"log",f"info_completion_{curdate}.log"))
         try:
             self._completion_artist()
-        #     res = sql_con.sql2commit(get_lack_info_sql)
-        #     need_completion_info_list = []
-        #     for i in res:
-        #         need_completion_info_list.append({"id":i[0],"album_id":i[1],"title":i[2],"artist_name":i[3],"album":i[4],"artist":i[5],"artist_id":i[6]})
-        #     self.search_song_info(need_completion_info_list)
-        #     calculation_table_info()
-        #     # 信息回放至文件
-        #     self.info_back2file()
+            self._completion_album()
+            self._completion_math_artist()
+            # 计算数据
+            calculation_table_info()
+            # 信息回放至文件
+            self.info_back2file()
         except:
             logger.error(format_exc())
-        # logger.success("信息收集结束")
+        logger.success("信息收集结束")
+    
+    
     # 定时启动刮削系统
     def regular_start_completion(self):
         def start_fun():

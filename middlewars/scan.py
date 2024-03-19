@@ -88,13 +88,13 @@ class FileScan:
             duration = info.info.length
             media_id = get_media_id(file_path=file_path)
             title = str(info.get("TIT2"))
-            artist = str(info.get("TPE1")).lower()
+            artist = str(info.get("TPE1")) if info.get("TPE1") else self.unkown_artist
             artist_id = md5(artist.encode()).hexdigest()
             if not artist:
                 artist = self.unkown_artist
                 artist_id = self.unkown_artist_id
             lrc = str(info.get("USLT::eng"))
-            album = str(info.get("TALB")).lower()
+            album = str(info.get("TALB")) if info.get("TALB") else self.unkown_artist
             album_id = md5(album.encode()).hexdigest()
             try:
                 jpeg = info.get("APIC:").__dict__.get("data")
@@ -103,8 +103,8 @@ class FileScan:
             has_cover_art = False
             if jpeg:
                 has_cover_art = True
-            lrc_path = None
-            album_img_path = None
+            lrc_path = "none"
+            album_img_path = "none"
             if lrc:
                 lrc_path = path.join(lrc_root_path,media_id+".lrc")
                 with open(lrc_path,"w",encoding="utf-8")as f:
@@ -128,19 +128,15 @@ class FileScan:
             duration = info.info.length
             media_id = get_media_id(file_path=file_path)
             title = str(info.get("title")[0])
-            album = str(info.get("album")[0]).lower()
-            img_data = info.get("images")
-            lrc_data = info.get("lrc")
-            artist_info = info.get("artist")
+            album = info.get("album")[0] if info.get("album") else self.unkown_artist
+            img_data = info.get("images") if info.get("images") else None
+            lrc_data = info.get("lrc") if info.get("lrc") else None
+            artist = info.get("artist")[0] if info.get("artist") else self.unkown_artist
             album_id = md5(album.encode()).hexdigest()
             has_cover_art = False
-            artist = self.unkown_artist
-            artist_id = self.unkown_artist_id
+            artist_id = md5(artist.encode()).hexdigest()
             lrc_path = None
             img_path = None
-            if artist_info:
-                artist = artist_info[0]
-                artist_id = md5(artist.encode()).hexdigest()
             if lrc_data:
                 lrc_path = path.join(getcwd(),"data","lrcs",media_id+".lrc")
                 with open(lrc_path,"w",encoding="utf-8")as f:
@@ -150,10 +146,8 @@ class FileScan:
                 img_data = b64decode(img_data[0])
                 with open(img_path,"rb")as f:
                     f.write(img_data)
-            if album is None:
-                logger.warning(file_path+"缺少专辑名称")
             insert2db(media_id=media_id,file_path=file_path,title=title,album=album,album_id=album_id,artist=artist,artist_id=artist_id,has_cover_art=has_cover_art,
-                      size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=self.unkown_artist,channels=channels,lrc_path=lrc_path,image_path=img_path)
+                      size=size,suffix=suffix,duration=duration,bitrate=bitrate,full_text=artist,channels=channels,lrc_path=lrc_path,image_path=img_path)
             
         # 文件扫描
         try:
@@ -173,7 +167,7 @@ class FileScan:
                         try:
                             mp3_info_extract(file_path=file)
                         except:
-                            logger.error(format_exc())
+                            logger.error(format_exc()+file)
                     elif file_type == "flac":
                         try:
                             flac_info_extract(file_path=file)
