@@ -1,4 +1,3 @@
-import asyncio
 import time
 from os import path,getcwd
 from base64 import b64encode
@@ -183,6 +182,8 @@ class InfoCompletion:
             album_id = info.get("album_id")
             songs = res.get("result").get("songs")
             match = False
+            if not songs:
+                return match
             for i in songs:
                 m_net_id = i.get(id)
                 name = i.get("name")
@@ -221,9 +222,10 @@ class InfoCompletion:
             info_list = [{"mid":i[0],"title":i[1],"album":i[2],"album_id":i[3]}for i in res]
             for i in info_list:
                 page = 0
-                limit = 99
-                while page < 20:
-                    url = self.base_url + f"/cloudsearch?keyword={i.get('title')}  {i.get('album')}&offset={page*limit}&limit={limit}"
+                limit = 100
+                while page < 4:
+                    url = self.base_url + f"/cloudsearch?keywords={i.get('title')}  {i.get('album')}&offset={page*limit}&limit={limit}"
+                    print(url)
                     res = get(url=url)
                     try:
                         res = res.json()
@@ -231,9 +233,11 @@ class InfoCompletion:
                             break
                         else:
                             page += 1
+                            time.sleep(3)
                             continue
                     except:
                         logger.error(format_exc())
+                        time.sleep(3)
                         continue
                 if not match_res:
                     logger.warning(str(i)+" not match")
