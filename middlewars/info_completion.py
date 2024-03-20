@@ -1,5 +1,6 @@
 import time
 from os import path,getcwd
+from re import findall
 from base64 import b64encode
 from traceback import format_exc
 from datetime import datetime
@@ -66,14 +67,18 @@ class InfoCompletion:
             info.tags.add(id3.TPE1(encoding=3,text=artist))
             info.tags.add(id3.TALB(encoding=3,text=album))
             # 歌词写入
-            with open(path.join("data","lrcs",mid+".lrc"),"r",encoding="utf-8")as f:
-                lrc = f.read()
-            info.tags.add(id3.Frames["USLT"](encoding=id3.Encoding.UTF8,lang="eng",text=lrc))
+            lrc_path = path.join("data","lrcs",mid+".lrc")
+            if path.exists(lrc_path):
+                with open(lrc_path,"r",encoding="utf-8")as f:
+                    lrc = f.read()
+                info.tags.add(id3.Frames["USLT"](encoding=id3.Encoding.UTF8,lang="eng",text=lrc))
             # 图片写入
             try:
-                with open(path.join(getcwd(),"data","album_img",album_id+".jpeg"),"rb")as f:
-                    img_content = f.read()
-                info.tags.add(id3.APIC(encoding=id3.Encoding.LATIN1,mime="image/jpeg",type=id3.PictureType.COVER_FRONT,data=img_content))
+                img_path = path.join(getcwd(),"data","album_img",album_id+".jpeg")
+                if path.exists(img_path):
+                    with open(img_path,"rb")as f:
+                        img_content = f.read()
+                    info.tags.add(id3.APIC(encoding=id3.Encoding.LATIN1,mime="image/jpeg",type=id3.PictureType.COVER_FRONT,data=img_content))
             except Exception as e:
                 logger.error(e)
                 pass
@@ -86,17 +91,21 @@ class InfoCompletion:
             info["artist"] = artist
             # 歌词写入
             try:
-                with open(path.join(getcwd(),"data","lrcs",mid+".lrc"),"r",encoding="utf-8")as f:
-                    lrc = f.read()
-                info["lrc"] = lrc
+                lrc_path = path.join(getcwd(),"data","lrcs",mid+".lrc")
+                if path.exists(lrc_path):
+                    with open(lrc_path,"r",encoding="utf-8")as f:
+                        lrc = f.read()
+                    info["lrc"] = lrc
             except Exception as e:
                 logger.error(e)
                 pass
             # 图片写入 
             try:
-                with open(path.join(getcwd(),"data","album_img",album_id+".jpeg"),"rb")as f:
-                    img_content = f.read()
-                info["image"] = b64encode(img_content).decode("utf-8")
+                img_path = path.join(getcwd(),"data","album_img",album_id+".jpeg")
+                if path.exists(img_path):
+                    with open(img_path,"rb")as f:
+                        img_content = f.read()
+                    info["image"] = b64encode(img_content).decode("utf-8")
             except Exception as e:
                 logger.error(e)
                 pass
@@ -282,9 +291,18 @@ class InfoCompletion:
         sql_res = [{"artist_id":i[0],"artist":i[1]} for i in sql_con.sql2commit(get_artist_sql)]
         for i in sql_res:
             artist = i.get("artist")
+            if "/" in artist:
+                artist = artist.split("/")[0]
+            elif "、" in artist:
+                artist = artist.split("、")[0]
+            elif "(" in artist:
+                artist = findall(r'.*?\(',artist)[0]
+            elif "（" in artist:
+                artist = findall(r'.*?（',artist)[0]
             try:
                 url = self.base_url + f"/cloudsearch?keywords={artist}&type=100"
                 response = get(url=url).json()
+                print(url)
                 if match_artist(response,i):
                     logger.success(str(i)+" artist matched")
                 else:

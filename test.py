@@ -2,5 +2,5 @@ import fuzzywuzzy
 import fuzzywuzzy.fuzz
 
 
-match_rate = fuzzywuzzy.fuzz.ratio("甜約翰 Sweet John","甜約翰")
+match_rate = fuzzywuzzy.fuzz.ratio("某幻君","某幻君/阿达娃/杨秋儒")
 print(match_rate)
