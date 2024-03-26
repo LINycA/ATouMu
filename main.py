@@ -21,7 +21,7 @@ def index():
     return trans_res(res)
 
 # 系统初始化接口
-@app.route("/sys_init",methods=["POST"])
+@app.route("/api/sys_init",methods=["POST"])
 def sys_init():
     try:
         data = json.loads(request.data)
@@ -40,7 +40,9 @@ def sys_init():
 @check_sys_init_wrap
 def Keepalive():
     try:
-        return dispatcher.keepalive_params()
+        token = request.headers.get("Authorization") if request.headers.get("Authorization") else request.headers.get("X-Nd-Authorization")
+        data = {"token":token.replace("Bearer ","") if token else ""}
+        return dispatcher.keepalive_params(data=data)
     except:
         logger.error(format_exc())
         return PARAMS_ERROR
@@ -330,6 +332,10 @@ def Api(action):
             except:
                 logger.error(format_exc())
                 return PARAMS_ERROR
+        # 前端背景
+        elif action == "background":
+            res = dispatcher.background_params()
+            return res
         # 找不到则报错
         logger.warning("action:  "+action+"  未找到功能")
         return PARAMS_ERROR

@@ -27,6 +27,8 @@ class FileScan:
             mkdir(path.join(getcwd(),"data","artist_img"))
         if "lrcs" not in dir_list:
             mkdir(path.join(getcwd(),"data","lrcs"))
+        if "background" not in dir_list:
+            mkdir(path.join(getcwd(),"data","background"))
         if not path.exists(path.join(getcwd(),"log")):
             mkdir(path.join(getcwd(),"log"))
         self.unkown_artist = "unkown"

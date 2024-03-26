@@ -1,5 +1,6 @@
-from os import path, getcwd
+from os import path, getcwd,listdir
 from functools import wraps
+from random import choice
 import re
 from traceback import format_exc
 
@@ -75,11 +76,20 @@ class RequestParamsCheck:
                         return PARAMS_ERROR
                     elif user_dict[i] is None or user_dict[i] == "":
                         return PARAMS_ERROR
+                    elif i == "user_name" or i == "nick_name":
+                        if len(user_dict[i]) < 4 or len(user_dict[i]) > 8:
+                            return PARAMS_ERROR
+                    elif i == "password":
+                        if len(user_dict[i]) < 4 or len(user_dict[i]) > 16:
+                            return PARAMS_ERROR
+                    elif i == "email":
+                        if not re.match(r"[0-9a-zA-z.]+?\@[a-zA-Z0-9]+?\.[a-zA-Z]+",user_dict[i]):
+                            return PARAMS_ERROR
             except Exception as e:
                 logger.error(e)
                 return PARAMS_ERROR
             # 初始化数据库表
-            init_bool = sysinit.sys_init(data, user_dict)
+            init_bool = sysinit.sys_init(user_dict)
             if init_bool:
                 return SYSINIT_SUCCESS
             else:
@@ -448,7 +458,18 @@ class RequestParamsCheck:
             response.headers["X-Content-Duration"] = res_dict.get("duration")
             return response
         return PARAMS_ERROR
-            
+
+    # 前端背景图
+    def background_params(self):
+        img_list = [path.join(getcwd(),'data','background',i) for i in listdir(path.join(getcwd(),'data','background'))]
+        img_path = choice(img_list)
+        with open(img_path,"rb")as f:
+            img_data = f.read()
+        response = make_response(img_data)
+        response.headers["Content-Type"] = 'image/jpeg'
+        return response
+    
     # 系统心跳
-    def keepalive_params(self) -> Response:
+    @request_token_check_wrap
+    def keepalive_params(self,data:dict) -> Response:
         return Keepalive().keepalive()

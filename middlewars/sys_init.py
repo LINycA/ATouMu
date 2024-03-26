@@ -31,7 +31,7 @@ class SysInit:
         sql = f'insert into users(user_id,nick_name,user_name,email,password,admin,create_time) values("{id}","{nick_name}","{user_name}","{email}","{pass_}",1,"{create_time}");'
         return sql
     # 系统初始化
-    def sys_init(self,conf:dict,user_conf:dict) -> bool:
+    def sys_init(self,user_conf:dict) -> bool:
         """
         初始化系统数据库
         :param conf: 数据库配置信息

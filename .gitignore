@@ -11,3 +11,4 @@ data/artist_img/*.jpeg
 !data/album_img/tl.jpeg
 !data/artist_img/tl.jpeg
 *.log
+!data/background
