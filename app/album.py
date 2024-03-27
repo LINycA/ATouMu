@@ -11,7 +11,9 @@ class Album:
     def get_all_Album(self,page:int,limit:int,order_by:str,order:str,name:str) -> Response:
         if type(page) is not int or type(limit) is not int:
             return PARAMS_ERROR
-        order_by_dict = {"recently_added":"created_at","createdAt":"created_at"}
+        if page < 0 or limit < 1 or limit > 100:
+            return PARAMS_ERROR
+        order_by_dict = {"recently_added":"created_at","createdAt":"created_at","name":"name","artist":"artist"}
         if order_by not in order_by_dict:
             return PARAMS_ERROR
         order_by = order_by_dict.get(order_by)
