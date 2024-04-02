@@ -277,6 +277,27 @@ class Songs:
             logger.error(format_exc())
             return None
     
+    # 返回搜索关键词
+    def get_search_similar_info(self,keyword:str) -> Response:
+        sql_con = Sqlite_con()
+        sql_dict = {
+            "media" : f"select title,artist,id from media_file where title like \"%{keyword}%\" or artist like \"%{keyword}%\" or album like \"%{keyword}%\" limit 10;",
+            "artist" : f"select name,id from artist where name like \"%{keyword}%\" limit 10;",
+            "album" : f"select name,id from album where name like \"%{keyword}%\" limit 10;",
+        }
+        res_dict = {}
+        for sql in sql_dict:
+            res = sql_con.sql2commit(sql=sql_dict[sql])
+            if res:
+                if sql == "media":
+                    res = [{"id":i[2],"key":"歌曲："+i[0]+"-"+i[1]} for i in res]
+                if sql == 'album':
+                    res = [{"id":i[1],"key":"专辑："+i[0]} for i in res]
+                if sql == "artist":
+                    res = [{"id":i[1],"key":"歌手："+i[0]} for i in res]
+                res_dict[sql] = res
+        return trans_res(res_dict)
+
     # 获取单首歌曲的信息
     def get_song_info(self,id:str) -> Response:
         sql_con = Sqlite_con()
