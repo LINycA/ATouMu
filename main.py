@@ -337,6 +337,10 @@ def Api(action):
             res = dispatcher.background_params()
             return res
         # 找不到则报错
+        elif action == "search":
+            data.update({"keyword":request.args.get("keyword")})
+            res = dispatcher.search_params(data=data)
+            return res
         logger.warning("action:  "+action+"  未找到功能")
         return PARAMS_ERROR
     except:

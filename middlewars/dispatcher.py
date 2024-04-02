@@ -440,6 +440,12 @@ class RequestParamsCheck:
         response.headers["Content-Type"] = "image/jpeg"
         return response
 
+    @request_token_check_wrap
+    def search_params(self,data:dict) -> Response:
+        keyword = data.get("keyword")
+        res = Songs().get_search_similar_info(keyword=keyword)
+        return res
+
     # 获取单一歌曲文件详细信息
     @request_token_check_wrap
     def song_single_params(self,data:dict) -> Response:
