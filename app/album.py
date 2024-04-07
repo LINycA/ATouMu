@@ -66,3 +66,45 @@ class Album:
         response.headers["permissions-policy"] = "autoplay=(), camera=(), microphone=(), usb=()"
         response.headers["x-content-type-options"] = "nosniff"
         return response
+    
+    def get_album_detail(self,album_id:str,user_id:str) -> Response:
+        sql_con = Sqlite_con()
+        album_sql = f"""select artist,artist_id,created_at,duration,full_text,genre,id,max_year,min_year,name,size,song_count,updated_at from album where id = '{album_id}';"""
+        album_res = sql_con.sql2commit(sql=album_sql)[0]
+        album_play_count_sql = f""" select sum(play_count) from annotation where item_id='{album_id}' and item_type='album'; """
+        album_play_count_res = sql_con.sql2commit(sql=album_play_count_sql)
+        album_play_count_res = album_play_count_res[0][0] if album_play_count_res[0][0] else 0
+        album_play_date_sql = f"""select play_date from annotation where item_id='{album_id}' and item_type='album' order by play_date desc limit 1;"""
+        album_play_date_res = sql_con.sql2commit(sql=album_play_date_sql)
+        album_play_date_res = album_play_date_res[0] if album_play_date_res else "1970-01-01"
+        album_starred_sql = f"""select starred,starred_at from annotation where item_id='{album_id}' and item_type='album' and user_id='{user_id}';"""
+        album_starred_res = sql_con.sql2commit(sql=album_starred_sql)
+        album_starred_res = album_starred_res if album_starred_res else (False,"1970-01-01")
+        logger.info(album_starred_res)
+        res_dict = {
+            "albumArtist": album_res[0],
+            "albumArtistId": album_res[1],
+            "allArtistIds": album_res[1],
+            "artist": album_res[0],
+            "artistId": album_res[0],
+            "compilation": False,
+            "createdAt": album_res[2],
+            "duration": album_res[3],
+            "fullText": album_res[4],
+            "genre": album_res[5],
+            "genres": None,
+            "id": album_res[6],
+            "maxYear": album_res[7],
+            "minYear": album_res[8],
+            "name": album_res[9],
+            "orderAlbumArtistName": album_res[0],
+            "orderAlbumName": album_res[9],
+            "playCount": album_play_count_res,
+            "playDate": album_play_date_res,
+            "size": album_res[10],
+            "songCount": album_res[11],
+            "starred": album_starred_res[0],
+            "starredAt": album_starred_res[1],
+            "updatedAt": album_res[12]
+        }
+        return trans_res(res_dict)

@@ -301,13 +301,20 @@ class RequestParamsCheck:
     # 获取专辑信息
     @request_token_check_wrap
     def album_params(self,data:dict) -> Response:
-        limit = int(data.get("limit"))
-        offset = int(data.get("offset"))
-        order = data.get("order")
-        sort = data.get("sort")
-        name = data.get("name")
-        res = Album().get_all_Album(offset,limit,sort,order,name)
-        return res
+        alb = Album()
+        if "album_id" in data:
+            album_id = data.get("album_id")
+            res = alb.get_album_detail(album_id=album_id,user_id=data["user_id"])
+            return res
+        else:
+            limit = int(data.get("limit"))
+            offset = int(data.get("offset"))
+            order = data.get("order")
+            sort = data.get("sort")
+            name = data.get("name")
+            res = alb.get_all_Album(offset,limit,sort,order,name)
+            return res
+        
     
     # 获取艺术家信息
     @request_token_check_wrap

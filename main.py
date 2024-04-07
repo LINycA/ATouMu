@@ -197,6 +197,19 @@ def api_playlist_delete(pid:str):
         logger.error(format_exc())   
         return PARAMS_ERROR
 
+# 专辑接口拓展
+@app.route("/api/album/<aid>",methods=["GET","POST"])
+def api_album(aid:str):
+    token = request.headers.get("Authorization") if request.headers.get("Authorization") else request.headers.get("X-Nd-Authorization")
+    data = {"token":token.replace("Bearer ","") if token else ""}
+    try:
+        data.update({"album_id":aid})
+        res = dispatcher.album_params(data=data)
+        return res
+    except:
+        logger.error(format_exc())
+        return PARAMS_ERROR
+
 # api接口
 @app.route("/api/<action>",methods=["GET","POST"])
 @check_sys_init_wrap
