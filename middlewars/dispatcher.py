@@ -290,13 +290,17 @@ class RequestParamsCheck:
     # 获取媒体信息
     @request_token_check_wrap
     def songs_params(self,data:dict) -> Response:
-        limit = int(data.get("limit"))
-        offset = int(data.get("offset"))
-        order = data.get("order")
-        sort = data.get("sort")
-        title = data.get("title")
-        res = Songs().get_all_song(offset,limit,sort,order,title)
-        return res
+        if "album_id" in data:
+            res = Songs().get_songs_by_album(album=data.get("album_id"))
+            return res
+        else:
+            limit = int(data.get("limit"))
+            offset = int(data.get("offset"))
+            order = data.get("order")
+            sort = data.get("sort")
+            title = data.get("title")
+            res = Songs().get_all_song(offset,limit,sort,order,title)
+            return res
     
     # 获取专辑信息
     @request_token_check_wrap
@@ -447,6 +451,7 @@ class RequestParamsCheck:
         response.headers["Content-Type"] = "image/jpeg"
         return response
 
+    # 搜索
     @request_token_check_wrap
     def search_params(self,data:dict) -> Response:
         keyword = data.get("keyword")

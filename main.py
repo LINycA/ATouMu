@@ -264,7 +264,8 @@ def Api(action):
                     "offset":int(request.args.get("_start")),
                     "sort":request.args.get("_sort"),
                     "order":request.args.get("_order"),
-                    "title":request.args.get("title")
+                    "title":request.args.get("title"),
+                    "album_id":request.args.get("album_id")
                 })
                 res = dispatcher.songs_params(data=data)
                 return res

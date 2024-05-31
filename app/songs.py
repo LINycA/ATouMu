@@ -103,6 +103,60 @@ class Songs:
         response.headers["x-content-type-options"] = "nosniff"
         return response
 
+    # 根据专辑获取歌曲信息
+    def get_songs_by_album(self,album:str) -> Response:
+        sql_con = Sqlite_con()
+        sql = f"""
+        select 
+        album,artist,artist_id,album_id,bit_rate,
+        channels,created_at,duration,full_text,id,
+        lyrics,path,size,suffix,title,
+        updated_at,year from media_file where album_id="{album}";
+        """
+        song_res = [
+    {
+        "album": s[0],
+        "albumArtist": s[1],
+        "albumArtistId": s[2],
+        "albumId": s[3],
+        "artist": s[1],
+        "artistId": s[2],
+        "bitRate": s[4],
+        "bookmarkPosition": 0,
+        "channels": s[5],
+        "compilation": False,
+        "createdAt": s[6],
+        "discNumber": 0,
+        "duration": s[7],
+        "fullText": s[8],
+        "genre": "",
+        "genres": None,
+        "hasCoverArt": True,
+        "id": s[9],
+        "lyrics": s[10],
+        "orderAlbumArtistName": s[1],
+        "orderAlbumName": s[0],
+        "orderArtistName": s[1],
+        "orderTitle": s[14],
+        "path": s[11],
+        "playCount": 1,
+        "playDate": "2024-04-14T04:24:39Z",
+        "rating": 0,
+        "rgAlbumGain": 0,
+        "rgAlbumPeak": 1,
+        "rgTrackGain": 0,
+        "rgTrackPeak": 1,
+        "size": s[12],
+        "starred": False,
+        "starredAt": "0001-01-01T00:00:00Z",
+        "suffix": s[13],
+        "title": s[14],
+        "trackNumber": 0,
+        "updatedAt": s[15],
+        "year": s[16]
+    }for s in sql_con.sql2commit(sql=sql)]
+        return trans_res(song_res)
+
     # 根据歌手获取歌曲信息
     def get_songs_by_artist(self,count:int,artist:str,user_name:str) -> Response:
         sql_con = Sqlite_con()
